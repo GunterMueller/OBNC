@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly defaultPrefix="$(dirname "$(cd "$(dirname "$0")"; pwd -P)")"
+readonly defaultLibDir=lib
+readonly prefix="${OBNC_PREFIX:-$defaultPrefix}"
+readonly libdir="${OBNC_LIBDIR:-$defaultLibDir}"
+
+readonly importPath="${OBNC_IMPORT_PATH:-}"
+if [ -n "$importPath" ]; then
+	readonly searchPaths=".:$importPath:$prefix/$libdir/obnc"
+else
+	readonly searchPaths=".:$prefix/$libdir/obnc"
+fi
+
+PathOfGeneratedFile()
+{
+	local file="$1"
+	local dirPath="$2"
+
+	if [ -e "$dirPath/.obnc" ]; then
+		echo "$dirPath/.obnc/$file"
+	else
+		echo "$dirPath/$file"
+	fi
+}
+
+
+ModulePath()
+{
+	local module="$1"
+	
+	local libPrefix="${module%%[[:upper:]]*}"
+	local result=
+	IFS=:
+	for path in $searchPaths; do
+		if [ -e "$(PathOfGeneratedFile "$module.sym" "$path")" ] || [ -e "$path/$module.obn" ]; then
+			result="$path"
+			break;
+		elif [ -n "$libPrefix" ] && { [ -e "$(PathOfGeneratedFile "$module.sym" "$path/$libPrefix")" ] || [ -e "$path/$libPrefix/$module.obn" ]; }; then
+			result="$path/$libPrefix"
+			break;
+		fi
+	done
+	unset IFS
+	if [ -n "$result" ]; then
+		echo "$result"
+	else
+		echo "obnc-path: error: Module not found: $module" >&2
+		exit 1	
+	fi
+}
+
+
+Help()
+{
+	echo "usage: obnc-path [MODULE]" >&2
+}
+
+if [ "$#" -eq 0 ]; then
+	while read module; do
+		ModulePath "$module"
+	done
+elif [ "$#" -eq 1 ]; then
+	case "$1" in
+		-*) Help >&2; exit 1;;
+		*) ModulePath "$1"
+	esac
+else
+	Help >&2
+	exit 1
+fi

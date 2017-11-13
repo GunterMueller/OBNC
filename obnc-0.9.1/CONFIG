@@ -1,0 +1,3 @@
+prefix=/usr/local
+libdir=lib
+version=0.9.1

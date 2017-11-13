@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>DEFINITION Strings</title>
+		<link rel='stylesheet' type='text/css' href='style.css' />
+	</head>
+	<body>
+<p><a href='index.html'>Library obnc</a></p>
+<pre>
+DEFINITION <em>Strings</em>;
+<span class='comment'>(*Operations on strings
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". All character arrays are assumed to contain 0X as a terminator and positions start at 0.*)</span>
+
+	PROCEDURE <em>Length</em>(s: ARRAY OF CHAR): INTEGER;
+<span class='comment'>(*Length(s) returns the number of characters in s up to and excluding the first 0X.*)</span>
+
+	PROCEDURE <em>Insert</em>(source: ARRAY OF CHAR; pos: INTEGER; VAR dest: ARRAY OF CHAR);
+<span class='comment'>(*Insert(src, pos, dst) inserts the string src into the string dst at position pos (0 &lt;= pos &lt;= Length(dst)). If pos = Length(dst), src is appended to dst. If the size of dst is not large enough to hold the result of the operation, the result is truncated so that dst is always terminated with a 0X.*)</span>
+
+	PROCEDURE <em>Append</em>(extra: ARRAY OF CHAR; VAR dest: ARRAY OF CHAR);
+<span class='comment'>(*Append(s, dst) has the same effect as Insert(s, Length(dst), dst).*)</span>
+
+	PROCEDURE <em>Delete</em>(VAR s: ARRAY OF CHAR; pos, n: INTEGER);
+<span class='comment'>(*Delete(s, pos, n) deletes n characters from s starting at position pos (0 &lt;= pos &lt; Length(s)). If n &gt; Length(s) - pos, the new length of s is pos.*)</span>
+
+	PROCEDURE <em>Replace</em>(source: ARRAY OF CHAR; pos: INTEGER; VAR dest: ARRAY OF CHAR);
+<span class='comment'>(*Replace(src, pos, dst) has the same effect as Delete(dst, pos, Length(src)) followed by an Insert(src, pos, dst).*)</span>
+
+	PROCEDURE <em>Extract</em>(source: ARRAY OF CHAR; pos, n: INTEGER; VAR dest: ARRAY OF CHAR);
+<span class='comment'>(*Extract(src, pos, n, dst) extracts a substring dst with n characters from position pos (0 &lt;= pos &lt; Length(src)) in src. If n &gt; Length(src) - pos, dst is only the part of src from pos to the end of src, i.e. Length(src) -1. If the size of dst is not large enough to hold the result of the operation, the result is truncated so that dst is always terminated with a 0X.*)</span>
+
+	PROCEDURE <em>Pos</em>(pattern, s: ARRAY OF CHAR; pos: INTEGER): INTEGER;
+<span class='comment'>(*Pos(pat, s, pos) returns the position of the first occurrence of pat in s. Searching starts at position pos. If pat is not found, -1 is returned.*)</span>
+
+	PROCEDURE <em>Cap</em>(VAR s: ARRAY OF CHAR);
+<span class='comment'>(*Cap(s) replaces each lower case letter within s by its upper case equivalent.*)</span>
+
+END Strings.
+</pre>
+</body></html>

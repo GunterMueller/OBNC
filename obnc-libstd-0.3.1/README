@@ -1,0 +1,30 @@
+INTRODUCTION
+
+Obnc-libstd complements the basic library in OBNC with modules for accessing command line arguments and environment variables, printing to the standard error stream and converting numbers to strings and vice versa.
+
+
+INSTALLATION
+
+1. Compile the library with the command
+
+	./build
+
+2. Optionally, test the library with the command
+
+	./test
+
+3. Install the library with the command
+
+	./install
+
+The default destination is /usr/local. If you want to use a different location, run `./install PATH'. To undo the installation, run `./install u' or `./install u PATH'.
+
+
+LICENSE
+
+OBNC is released under the GNU General Public License, see file COPYING.
+
+
+AUTHOR
+
+Karl Landstrom <karl@miasap.se>

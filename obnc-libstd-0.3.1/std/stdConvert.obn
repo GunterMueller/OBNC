@@ -1,0 +1,54 @@
+(*Copyright 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of obnc-libstd.
+
+obnc-libstd is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+obnc-libstd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with obnc-libstd.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE stdConvert;
+(**Conversions between numbers and strings
+
+All conversions from a string skips over preceeding whitespace.*)
+
+	(*implemented in C*)
+
+	PROCEDURE IntToString*(i: INTEGER; VAR s: ARRAY OF CHAR; VAR done: BOOLEAN);
+(**IntToString(i, s, d) returns in s the decimal representation of i. If s is large enough to hold the result, d is set to TRUE. Otherwise d is set to FALSE.*)
+	END IntToString;
+
+
+	PROCEDURE RealToString*(x: REAL; VAR s: ARRAY OF CHAR; VAR done: BOOLEAN);
+(**RealToString(x, s, d) returns in s a string representation of i. If s is large enough to hold the result, d is set to TRUE. Otherwise d is set to FALSE.*)
+	END RealToString;
+
+
+	PROCEDURE StringToInt*(s: ARRAY OF CHAR; VAR i: INTEGER; VAR done: BOOLEAN);
+(**StringToInt(s, i, d) returns in i the integer constant in s according to the format
+
+	integer = digit {digit} | digit {hexDigit} "H".
+	hexDigit = digit | "A" | "B" | "C" | "D" | "E" | "F".
+	
+d indicates the success of the operation.*)
+	END StringToInt;
+
+
+	PROCEDURE StringToReal*(s: ARRAY OF CHAR; VAR x: REAL; VAR done: BOOLEAN);
+(**StringToReal(s, x, d) returns in x the real number in s according to the format
+
+	real = digit {digit} "." {digit} [ScaleFactor].
+	ScaleFactor = "E" ["+" | "-"] digit {digit}.
+
+d indicates the success of the operation.*)
+	END StringToReal;
+
+END stdConvert.

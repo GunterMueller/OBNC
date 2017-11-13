@@ -1,0 +1,88 @@
+(*Copyright 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of obnc-libstd.
+
+obnc-libstd is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+obnc-libstd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with obnc-libstd.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE ConvertTest;
+
+	IMPORT Convert := stdConvert, Out;
+	
+	VAR
+		s: ARRAY 32 OF CHAR;
+		shortStr: ARRAY 2 OF CHAR;
+		i: INTEGER;
+		x: REAL;
+		done: BOOLEAN;
+		
+	PROCEDURE ApproxEqual(x, y: REAL): BOOLEAN;
+	RETURN ABS(x - y) < 0.001
+	END ApproxEqual;
+		
+BEGIN
+	(*test IntToString*)
+	Convert.IntToString(-123, s, done);
+	ASSERT(done);
+	ASSERT(s = "-123");
+	Convert.IntToString(0, s, done);
+	ASSERT(done);
+	ASSERT(s = "0");
+	Convert.IntToString(123, s, done);
+	ASSERT(done);
+	ASSERT(s = "123");
+	Convert.IntToString(123, shortStr, done);
+	ASSERT(~done);
+
+	(*test RealToString*)
+	Convert.RealToString(-123.0, s, done);
+	ASSERT(done);
+	ASSERT(s = "-1.230000E+02");
+	Convert.RealToString(0.0, s, done);
+	ASSERT(done);
+	ASSERT(s = "0.000000E+00");
+	Convert.RealToString(123.0, s, done);
+	ASSERT(done);
+	ASSERT(s = "1.230000E+02");
+	Convert.RealToString(123.0, shortStr, done);
+	ASSERT(~done);
+
+	(*test StringToInt*)
+	Convert.StringToInt("-123", i, done);
+	ASSERT(done);
+	ASSERT(i = -123);
+	Convert.StringToInt("0", i, done);
+	ASSERT(done);
+	ASSERT(i = 0);
+	Convert.StringToInt("123", i, done);
+	ASSERT(done);
+	ASSERT(i = 123);
+	Convert.StringToInt("0FFH", i, done);
+	ASSERT(done);
+	ASSERT(i = 0FFH);
+	Convert.StringToInt("foo123", i, done);
+	ASSERT(~done);
+
+	(*test StringToReal*)
+	Convert.StringToReal("-12.3", x, done);
+	ASSERT(done);
+	ASSERT(ApproxEqual(x, -12.3));
+	Convert.StringToReal("0.0", x, done);
+	ASSERT(done);
+	ASSERT(ApproxEqual(x, 0.0));
+	Convert.StringToReal("1.23E+01", x, done);
+	ASSERT(done);
+	ASSERT(ApproxEqual(x, 12.3));
+	Convert.StringToReal("foo12.3", x, done);
+	ASSERT(~done)
+END ConvertTest.
