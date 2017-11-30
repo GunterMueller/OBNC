@@ -1,0 +1,27 @@
+(*Copyright 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of obnc-libstd.
+
+obnc-libstd is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+obnc-libstd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with obnc-libstd.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE stdEnv;
+(**Procedure for getting the value of environment variables*)
+
+(*implemented in C*)
+
+	PROCEDURE Get*(name: ARRAY OF CHAR; VAR value: ARRAY OF CHAR; VAR res: INTEGER);
+(**Get(nm, val, res) returns in val the value of an environment with the name nm, or the empty string if the variable is undefined. If the variable is defined, the number of truncated characters is assigned to res, else res is -1.*)
+	END Get;
+
+END stdEnv.

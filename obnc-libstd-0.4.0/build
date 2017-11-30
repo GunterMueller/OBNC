@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# Copyright 2017 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of obnc-libstd.
+#
+# obnc-libstd is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# obnc-libstd is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with obnc-libstd.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly packageName="$(basename "$selfDirPath")"
+readonly packageNameSansVersion="${packageName%-[0-9]*}"
+readonly libName="${packageNameSansVersion#obnc-lib}"
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+Build()
+{
+	EchoAndRun cd "$selfDirPath/$libName"
+	for test in ?*Test.obn; do
+		EchoAndRun obnc "$test"
+	done
+	EchoAndRun obncdoc
+	cd "$selfDirPath"
+}
+
+
+Clean()
+{
+	rm -rf "$selfDirPath/$libName"/.obnc
+	local file=
+	for file in "$selfDirPath/$libName"/*Test; do
+		rm -f "$file"
+	done
+	rm -rf "$selfDirPath/$libName/obncdoc"
+}
+
+
+Help()
+{
+	echo "usage: "
+	printf "\tbuild [clean]\n"
+	printf "\tbuild -h\n"
+	echo
+	printf "\tclean\tdelete all generated files\n"
+	printf "\t-h\tdisplay help and exit\n"
+}
+
+clean=false
+for arg in "$@"; do
+	case "$arg" in
+		clean)
+			clean=true;;
+		-h)
+			Help
+			exit;;
+		*)
+			{ echo "invalid command"; Help; } >&2
+			exit 1
+	esac
+done
+
+if "$clean"; then
+	Clean
+else
+	Build
+fi
