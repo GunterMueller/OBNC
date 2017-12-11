@@ -1,0 +1,22 @@
+2017-12-08: OBNC 0.10.1 released. Added support for `long double' in basic module Math. Applications using XYplane can be run in fullscreen mode (toggle with Ctrl-f).
+
+2017-11-30: OBNC 0.10.0 and OBNC-libstd 0.4.0 released. New build options to use `long' type specifier for INTEGER and SET or for REAL. More efficient use of garbage collector.
+
+2017-10-31: OBNC 0.9.1 and OBNC-libstd 0.3.1 released. Improved browsing of library module definitions and a few corrections.
+
+2017-10-25: OBNC 0.9.0 provides a more flexible installation procedure.
+
+2017-09-29: OBNC 0.8.4 resolves a few issues related to type compatibility.
+
+2017-09-16: OBNC 0.8.3 prevents name collisions between symbols when object files with the same name are linked from different directories (indirectly imported library-local modules).
+
+2017-08-11: OBNC 0.8.2 corrects header file include paths for library-local modules.
+
+2017-08-07: OBNC 0.8.1 ignores all text after the final full-stop of a module.
+
+2017-08-04: OBNC 0.8.0 and Obnc-libstd 0.2.1 released. To resolve name conflicts between C header files (for instance math.h and Math.h) on case-insensitive file-systems, like HFS+ in OS X, all include directives are now generated with a path instead of using include options (-I) in the C compilation command.
+
+2017-07-19: OBNC 0.7.1 released - Avoids unnecessary auxillary type declarations for exported variables in the generated C code and makes the event loop in basic module XYplane less CPU intensive.
+
+2017-07-18: OBNC 0.7.0 has improved runtime exception diagnostics where the C source filename and line number is included in the error message.
+

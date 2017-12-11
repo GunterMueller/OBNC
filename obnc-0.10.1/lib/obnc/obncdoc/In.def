@@ -1,0 +1,38 @@
+DEFINITION In;
+(*Input from the standard input stream
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". All read operations except Char skips over preceding whitespace.*)
+
+	VAR
+		Done: BOOLEAN; (*status of last operation*)
+
+	PROCEDURE Open;
+(*included for compatibility with "The Oakwood Guidelines". On a typical Unix-like system, stdin cannot be rewinded. If Open is called when the file position is not at the beginning of stdin, the program aborts.*)
+
+	PROCEDURE Char(VAR ch: CHAR);
+(*returns in ch the character at the current position*)
+
+	PROCEDURE Int(VAR i: INTEGER);
+(*returns in i the integer constant at the current position according to the format
+
+	integer = digit {digit} | digit {hexDigit} "H".
+	hexDigit = digit | "A" | "B" | "C" | "D" | "E" | "F".
+*)
+
+	PROCEDURE Real(VAR x: REAL);
+(*returns in x the real constant at the current position according to the format
+
+	real = digit {digit} "." {digit} [ScaleFactor].
+	ScaleFactor = "E" ["+" | "-"] digit {digit}.
+*)
+
+	PROCEDURE String(VAR str: ARRAY OF CHAR);
+(*returns in str the string at the current position according to the format
+
+	string = """ {character} """ | digit {hexdigit} "X" .
+*)
+
+	PROCEDURE Name(VAR name: ARRAY OF CHAR);
+(*Name(s) returns in s the sequence of graphical (non-whitspace) characters at the current position*)
+
+END In.
