@@ -1,3 +1,5 @@
+--------------------
+2017-12-15: OBNC 0.10.2 released. For an actual parameter which is a dereferenced pointer corresponding to a formal variable parameter of record type, pass the type descriptor of the *dynamic* type.
 2017-12-08: OBNC 0.10.1 released. Added support for `long double' in basic module Math. Applications using XYplane can be run in fullscreen mode (toggle with Ctrl-f).
 
 2017-11-30: OBNC 0.10.0 and OBNC-libstd 0.4.0 released. New build options to use `long' type specifier for INTEGER and SET or for REAL. More efficient use of garbage collector.

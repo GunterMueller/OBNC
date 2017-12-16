@@ -1,0 +1,103 @@
+(*Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE InputTest;
+
+	IMPORT Input, Out, XYplane;
+(*
+	PROCEDURE TestAvailable;
+		VAR n: INTEGER; ch: CHAR;
+	BEGIN
+		Out.String("Press any key ... ");
+		Out.Ln;
+		REPEAT
+			n := Input.Available()
+		UNTIL n # 0;
+		ASSERT(n > 0);
+		Out.String("OK");
+		Out.Ln;
+		Input.Read(ch)
+	END TestAvailable;
+
+
+	PROCEDURE TestRead;
+		VAR ch: CHAR;
+	BEGIN
+		Out.String("Press space ... ");
+		Out.Ln;
+		Input.Read(ch);
+		ASSERT(ch = " ");
+		Out.String("OK");
+		Out.Ln;
+
+		Out.String("Press $ ... ");
+		Out.Ln;
+		Input.Read(ch);
+		ASSERT(ch = "$");
+		Out.String("OK");
+		Out.Ln
+	END TestRead;
+
+
+	PROCEDURE TestButton(button: INTEGER);
+		VAR buttonLabels: ARRAY 3, 8 OF CHAR;
+			buttons: SET; x, y: INTEGER;
+	BEGIN
+		buttonLabels[0] := "right";
+		buttonLabels[1] := "middle";
+		buttonLabels[2] := "left";
+		Out.String("Press ");
+		Out.String(buttonLabels[button]);
+		Out.String(" mouse button ... ");
+		Out.Ln;
+		REPEAT
+			Input.Mouse(buttons, x, y);
+		UNTIL buttons # {};
+		ASSERT(button IN buttons);
+		ASSERT(x >= 0);
+		ASSERT(y >= 0);
+		Out.String("OK");
+		Out.Ln;
+		REPEAT (*wait until button has been released*)
+			Input.Mouse(buttons, x, y);
+		UNTIL buttons = {}
+	END TestButton;
+
+
+	PROCEDURE TestMouse;
+	BEGIN
+		TestButton(0);
+		TestButton(1);
+		TestButton(2)
+	END TestMouse;
+
+
+	PROCEDURE TestTime;
+	BEGIN
+		ASSERT(Input.TimeUnit > 0);
+		ASSERT(Input.Time() > 0)
+	END TestTime;
+
+
+BEGIN
+	XYplane.Open;
+	TestAvailable;
+	TestRead;
+	TestMouse;
+	TestTime
+*)
+END InputTest.

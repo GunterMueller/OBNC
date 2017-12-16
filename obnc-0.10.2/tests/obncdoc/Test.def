@@ -1,0 +1,12 @@
+DEFINITION Test;
+
+	CONST
+		s = "(*(a < b) & (b > c)*)"; (*(*"foo"*)*)
+
+	PROCEDURE P;
+(*
+	a multi-line comment
+*)
+	END P;
+
+END Test.
