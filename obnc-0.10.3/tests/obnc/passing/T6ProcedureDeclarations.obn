@@ -1,0 +1,134 @@
+(*Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE T6ProcedureDeclarations;
+
+	TYPE
+		Row = ARRAY 20 OF INTEGER;
+		Matrix = ARRAY 10, 20 OF INTEGER;
+		Ptr = POINTER TO RECORD f: INTEGER END;
+		Proc = PROCEDURE;
+
+	PROCEDURE TestValueParameters;
+		VAR ptr: Ptr;
+			proc: Proc;
+			A: Matrix;
+			B: ARRAY 10 OF Row;
+	
+		PROCEDURE P(x: INTEGER);
+		BEGIN
+			x := 0
+		END P;
+		
+		PROCEDURE P1(x: Ptr);
+		BEGIN
+			x := NIL
+		END P1;
+
+		PROCEDURE P2(x: Proc);
+		BEGIN
+			x := NIL
+		END P2;
+		
+		PROCEDURE P3(A: Matrix);
+		BEGIN
+			ASSERT(LEN(A) = 10);
+			ASSERT(LEN(A[0]) = 20)
+		END P3;
+		
+		PROCEDURE P4(A: ARRAY OF Row);
+		END P4;
+		
+	BEGIN
+		P(0);
+		NEW(ptr);
+		P1(ptr);
+		P2(proc);
+		P3(A);
+		P4(B)
+	END TestValueParameters;
+	
+	
+	PROCEDURE TestVarParameters;
+		VAR x: Ptr;
+			A: Matrix;
+		
+		PROCEDURE Alloc(VAR p: Ptr);
+		BEGIN
+			NEW(p);
+			p.f := 1
+		END Alloc;
+		
+		PROCEDURE P(VAR A: Matrix);
+		BEGIN
+			ASSERT(LEN(A) = 10);
+			ASSERT(LEN(A[0]) = 20)
+		END P;
+
+	BEGIN
+		Alloc(x);
+		ASSERT(x.f = 1);
+		P(A)
+	END TestVarParameters;
+	
+	
+	PROCEDURE TestResultExpressions;
+		VAR x: Ptr;
+	
+		PROCEDURE P(): Ptr;
+			TYPE PtrExt = POINTER TO RECORD (Ptr) END;
+			VAR y: PtrExt;
+		BEGIN
+			NEW(y)
+		RETURN y
+		END P;
+	
+	BEGIN
+		x := P()
+	END TestResultExpressions;
+
+
+	PROCEDURE TestLocalProcedures;
+		VAR s: INTEGER;
+
+		PROCEDURE Sum(n: INTEGER): INTEGER;
+
+			PROCEDURE Inner(i, acc: INTEGER): INTEGER;
+				VAR result: INTEGER;
+			BEGIN
+				IF i >= 1 THEN
+					result := Inner(i - 1, acc + i)
+				ELSE
+					result := acc
+				END
+			RETURN result
+			END Inner;
+
+		RETURN Inner(n, 0)
+		END Sum;
+
+	BEGIN
+		s := Sum(10);
+		ASSERT(s = 55)
+	END TestLocalProcedures;
+
+BEGIN
+	TestValueParameters;
+	TestVarParameters;
+	TestResultExpressions;
+	TestLocalProcedures
+END T6ProcedureDeclarations.

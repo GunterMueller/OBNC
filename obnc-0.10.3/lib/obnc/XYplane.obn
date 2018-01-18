@@ -1,0 +1,65 @@
+(*Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE XYplane;
+(**Basic facilities for graphics programming
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". 
+
+The drawing plane is repainted when Key is invoked. A minimal event loop is
+
+	REPEAT UpdateDrawingPlane UNTIL XYplane.Key() = "q"
+	
+Fullscreen mode is toggled with Ctrl-f. It can also be exited with Esc.
+*)
+
+(*implemented in C*)
+
+	IMPORT Input;
+
+	CONST
+		(**drawing modes*)
+		draw* = 1;
+		erase* = 0;
+
+	VAR
+		X*, Y*: INTEGER; (**X = 0 and Y = 0. Included for compatibility with The Oakwood Guidlines.*)
+		W*, H*: INTEGER; (**width and height of the drawing plane in pixels*)
+
+	PROCEDURE Open*;
+(**initializes the drawing plane*)
+	END Open;
+
+	PROCEDURE Clear*;
+(**erases all pixels in the drawing plane*)
+	END Clear;
+
+	PROCEDURE Dot*(x, y, mode: INTEGER);
+(**Dot(x, y, m) draws or erases the pixel at the coordinates (x, y) relative to the lower left corner of the plane. If m = draw the pixel is drawn, if m = erase the pixel is erased.*)
+	END Dot;
+
+	PROCEDURE IsDot*(x, y: INTEGER): BOOLEAN;
+(**returns TRUE if the pixel at the coordinates (x, y) relative to the lower left corner of the screen is drawn, otherwise it returns FALSE*)
+	RETURN FALSE (*dummy value*)
+	END IsDot;
+
+	PROCEDURE Key*(): CHAR;
+(**reads the keyboard. If a key was pressed prior to invocation, its character value is returned, otherwise the result is 0X.*)
+	RETURN CHR(0) (*dummy value*)
+	END Key;
+
+END XYplane.

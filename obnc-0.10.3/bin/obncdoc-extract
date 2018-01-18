@@ -1,0 +1,280 @@
+#!/usr/bin/awk -f
+
+# Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+function EndsInsideComment(line, startsInsideComment)
+{
+	return (startsInsideComment || (index(line, "(*") > 0)) && (index(line, "*)") == 0)
+}
+
+
+function EndsInsideRecord(line, parts) #local variables from second parameter
+{
+	split(line, parts, "\"|\\(\\*")
+	return (match(parts[1], "[^A-Za-z0-9]RECORD([^A-Za-z0-9]|$)") > 0) && (match(parts[1], "[^A-Za-z0-9]END[ \t]*;") == 0)
+}
+
+
+function RecordQualidents(line, i, regex, pos, done, matchedString)  #local variables from second parameter
+{
+	regex = qualidentRegex"|\"|\\(\\*"
+	i = 1
+	done = 0
+	pos = match(line, regex)
+	while ((i <= 100) && ! done && (RSTART > 0)) {
+		matchedString = substr(line, pos, RLENGTH)
+		if (matchedString == "\"") {
+			pos += RLENGTH
+			pos += index(substr(line, pos), "\"") #skip string
+			pos++
+			pos += match(substr(line, pos), regex)
+		} else if (matchedString == "(*") {
+			done = 1
+		} else {
+			match(matchedString, identRegex)
+			publicImports[substr(matchedString, 1, RLENGTH)] = ""
+			pos += RLENGTH
+			pos += match(substr(line, pos), regex) - 1
+		}
+		i++
+	}
+}
+
+
+function WithoutExportMarks(line, left, right) #local variables from parameter two
+{
+	match(line, "[=:;(]|\\(\\*")
+	if (RSTART > 0) {
+		left = substr(line, 1, RSTART - 1)
+		right = substr(line, RSTART)
+	} else {
+		left = line
+		right = ""
+	}
+	gsub("\\*", "", left)
+	return left""right
+}
+
+
+function ExportedParts(line)
+{
+	line = WithoutExportMarks(line)
+	sub("\\(\\*([^*].*|$)", "", line)
+	sub("\\(\\*\\*", "(*", line)
+	return line
+}
+
+BEGIN {
+	identRegex = "[A-Za-z][A-Za-z0-9]*"
+	qualidentRegex = identRegex"\\."identRegex
+	exportedIdentRegex = identRegex"[ \t]*\\*"
+	savedOutput = "" #output after import list
+	insideExportedRecord = 0
+	exportedFieldFound = 0
+	moduleIdent = ""
+	currentSection = ""
+	insideComment = 0
+	insideExportedComment = 0
+	exportedFeatureFound["CONST"] = 0
+	exportedFeatureFound["TYPE"] = 0
+	exportedFeatureFound["VAR"] = 0
+	split("", aliasedImports) #initialize empty array
+	split("", publicImports) #initialize empty array
+}
+
+! insideComment && ($1 == "MODULE") {
+	if (substr($2, length($2), 1) == ";") {
+		moduleIdent = substr($2, 1, length($2) - 1)
+	} else {
+		moduleIdent = $2
+	}
+	line = $0
+	sub(/MODULE/, "DEFINITION", line)
+	insideComment = EndsInsideComment(line, 0)
+	print ExportedParts(line)
+	next
+}
+
+! insideComment && ($1 == "IMPORT") {
+	currentSection = "IMPORT"
+}
+
+! insideComment && (currentSection == "IMPORT") {
+	#add aliased modules to aliasedImports
+	aliasedImportRegex = "[A-Za-z0-9]+[ \t]*:=[ \t]*[A-Za-z0-9]+|\\(\\*"
+	i = 1
+	done = 0
+	oldPos = 0
+	newPos = match($0, aliasedImportRegex)
+	while ((i <= 100) && ! done && (newPos > oldPos)) {
+		str = substr($0, newPos, RLENGTH)
+		if (str == "(*") {
+			done = 1
+		} else {
+			split(str, import, "[ \t:=]+")
+			aliasedImports[import[1]] = import[2]
+			oldPos = newPos
+			newPos += RLENGTH
+			newPos += match(substr($0, newPos),  aliasedImportRegex) - 1
+		}
+		i++
+	}
+
+	#are we on the last import line?
+	match($0, ";|\\(\\*")
+	if ((RSTART > 0) && (substr($0, RSTART, RLENGTH) == ";")) {
+		currentSection = ""
+	}
+
+	next
+}
+
+! insideComment && /^[ \t]*$/ {
+	if (match(currentSection, "^(CONST|TYPE|VAR)$")) {
+		sub("\n+$", "\n\n", savedOutput)
+	}
+}
+
+! insideComment && (currentSection != "PROCEDURE") && ($1 ~ "^(CONST|TYPE|VAR)$") {
+	currentSection = $1
+	sub("\n+$", "\n", savedOutput)
+	if (match($2$3, "^"exportedIdentRegex)) {
+		RecordQualidents($0)
+		insideComment = EndsInsideComment($0, 0)
+		insideExportedRecord = EndsInsideRecord($0)
+		savedOutput = savedOutput ExportedParts($0) "\n"
+		exportedFeatureFound[$1] = 1
+	}
+	next
+}
+
+! insideComment && (currentSection != "PROCEDURE") && insideExportedRecord && ($1 ~ "^END[ \t]*;") {
+	line = $0
+	if (! exportedFieldFound) {
+		sub("^[ \t]*", " ", line)
+	}
+	insideExportedRecord = 0
+	exportedFieldFound = 0
+	savedOutput = savedOutput ExportedParts(line) "\n"
+	next
+}
+
+! insideComment && ($1 == "PROCEDURE") && ($2 ~ "^[A-Za-z]") {
+	currentSection = "PROCEDURE"
+	sub("\n+$", "\n", savedOutput)
+}
+
+! insideComment && ($0 ~ "^[ \t]*(PROCEDURE[ \t]+)?"exportedIdentRegex) {
+	if (match(currentSection, "^(CONST|TYPE|VAR)$") && ! exportedFeatureFound[currentSection]) {
+		savedOutput = savedOutput "\n\t" currentSection "\n"
+		exportedFeatureFound[currentSection] = 1
+	}
+	RecordQualidents($0)
+	if (insideExportedRecord) {
+		if (! exportedFieldFound) {
+			savedOutput = savedOutput "\n"
+			exportedFieldFound = 1
+		}
+	} else {
+		insideExportedRecord = EndsInsideRecord($0)
+	}
+	insideComment = EndsInsideComment($0, 0)
+	if ($1 == "PROCEDURE") {
+		savedOutput = savedOutput "\n"
+	}
+	savedOutput = savedOutput ExportedParts($0)
+	if (! (insideExportedRecord && ! exportedFieldFound)) {
+		savedOutput = savedOutput "\n"
+	}
+	next
+}
+
+! insideComment && ($1 == "END") && ($2$3 ~ "^"moduleIdent"\\.") {
+	insideComment = EndsInsideComment($0, 0)
+	if (match(savedOutput, "^\n*$")) {
+		savedOutput = ""
+	} else {
+		savedOutput = savedOutput "\n"
+	}
+	savedOutput = savedOutput ExportedParts($0) "\n"
+	next
+}
+
+! insideComment && ($1 ~ "^\\(\\*\\*?") {
+	insideComment = EndsInsideComment($0, 0)
+	if (match($1, "^\\(\\*\\*")) {
+		if (match(currentSection, "CONST|TYPE|VAR") && ! exportedFeatureFound[currentSection]) {
+			savedOutput = savedOutput "\n\t" currentSection "\n"
+			exportedFeatureFound[currentSection] = 1
+		}
+		line = $0
+		sub(/\(\*\*/, "(*", line)
+		if (insideComment) {
+			insideExportedComment = 1
+		}
+		if (currentSection == "") {
+			print line
+		} else {
+			if (match(savedOutput, "\\*\\)[ \t\n]*$")) {
+				#add blank line between comments
+				savedOutput = savedOutput "\n"
+			}
+			savedOutput = savedOutput line "\n"
+		}
+	}
+	next
+}
+
+insideComment {
+	if (insideExportedComment) {
+		if (currentSection == "") {
+			print $0
+		} else {
+			savedOutput = savedOutput $0 "\n"
+		}	
+	}
+	insideComment = EndsInsideComment($0, 1)
+	if (! insideComment) {
+		insideExportedComment = 0
+	}
+}
+
+END {
+	#print import list
+	n = 0
+	for (key in publicImports) {
+		n++
+	}
+	if (n > 0) {
+		printf "\n\tIMPORT"
+		i = 1
+		for (key in publicImports) {
+			if (i > 1) {
+				printf ","
+			}
+			printf " %s", key
+			if (aliasedImports[key] != "") {
+				printf " := %s", aliasedImports[key]
+			}
+			i++
+		}
+		print ";"
+	}
+
+	print substr(savedOutput, 1, length(savedOutput) - 1)
+}
