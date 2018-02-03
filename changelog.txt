@@ -1,4 +1,5 @@
 --------------------
+2018-02-02: OBNC 0.11.0 implements multi-dimensional open arrays.
 2018-01-16: OBNC 0.10.3 released. Correct generation of multidimensional array parameters. Improved formatting of obncdoc output.
 2017-12-15: OBNC 0.10.2 released. For an actual parameter which is a dereferenced pointer corresponding to a formal variable parameter of record type, pass the type descriptor of the *dynamic* type.
 2017-12-08: OBNC 0.10.1 released. Added support for `long double' in basic module Math. Applications using XYplane can be run in fullscreen mode (toggle with Ctrl-f).
