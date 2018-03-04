@@ -1,0 +1,31 @@
+body {
+	font-family: sans-serif;
+	margin: 1em;
+}
+
+pre {
+	font-family: inherit;
+	
+	-moz-tab-size: 5;
+	-o-tab-size: 5;
+	tab-size: 5;
+
+	white-space: pre-wrap;
+	white-space: -moz-pre-wrap;
+	white-space: -pre-wrap;
+	white-space: -o-pre-wrap;
+	word-wrap: break-word;
+}
+
+pre em {
+	font-style: normal;
+	font-weight: bold;
+}
+
+pre .comment {
+	color: #800000;
+}
+
+pre .string {
+	color: #767676;
+}

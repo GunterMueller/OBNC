@@ -1,0 +1,30 @@
+DEFINITION Strings;
+(*Operations on strings
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". All character arrays are assumed to contain 0X as a terminator and positions start at 0.*)
+
+	PROCEDURE Length(s: ARRAY OF CHAR): INTEGER;
+(*Length(s) returns the number of characters in s up to and excluding the first 0X.*)
+
+	PROCEDURE Insert(source: ARRAY OF CHAR; pos: INTEGER; VAR dest: ARRAY OF CHAR);
+(*Insert(src, pos, dst) inserts the string src into the string dst at position pos (0 <= pos <= Length(dst)). If pos = Length(dst), src is appended to dst. If the size of dst is not large enough to hold the result of the operation, the result is truncated so that dst is always terminated with a 0X.*)
+
+	PROCEDURE Append(extra: ARRAY OF CHAR; VAR dest: ARRAY OF CHAR);
+(*Append(s, dst) has the same effect as Insert(s, Length(dst), dst).*)
+
+	PROCEDURE Delete(VAR s: ARRAY OF CHAR; pos, n: INTEGER);
+(*Delete(s, pos, n) deletes n characters from s starting at position pos (0 <= pos <= Length(s)). If n > Length(s) - pos, the new length of s is pos.*)
+
+	PROCEDURE Replace(source: ARRAY OF CHAR; pos: INTEGER; VAR dest: ARRAY OF CHAR);
+(*Replace(src, pos, dst) has the same effect as Delete(dst, pos, Length(src)) followed by an Insert(src, pos, dst).*)
+
+	PROCEDURE Extract(source: ARRAY OF CHAR; pos, n: INTEGER; VAR dest: ARRAY OF CHAR);
+(*Extract(src, pos, n, dst) extracts a substring dst with n characters from position pos (0 <= pos <= Length(src)) in src. If n > Length(src) - pos, dst is only the part of src from pos to the end of src, i.e. Length(src) -1. If the size of dst is not large enough to hold the result of the operation, the result is truncated so that dst is always terminated with a 0X.*)
+
+	PROCEDURE Pos(pattern, s: ARRAY OF CHAR; pos: INTEGER): INTEGER;
+(*Pos(pat, s, pos) returns the position of the first occurrence of pat in s. Searching starts at position pos (0 <= pos <= Length(s)). If pat is not found, -1 is returned.*)
+
+	PROCEDURE Cap(VAR s: ARRAY OF CHAR);
+(*Cap(s) replaces each lower case letter within s by its upper case equivalent.*)
+
+END Strings.
