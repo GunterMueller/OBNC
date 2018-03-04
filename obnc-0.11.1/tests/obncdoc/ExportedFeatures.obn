@@ -1,0 +1,44 @@
+MODULE ExportedFeatures; (**documentation...*)
+
+	IMPORT F := Files, Out;
+
+	CONST
+		s* = "s* = 'foo'; (**"; (**(*"foo"*)*)
+		(*s* = "s* = 'foo'; (**"; (**(*"foo"*)*)*)*)
+		t = 37;
+	
+	TYPE
+		(*documentation...*)
+		T* = RECORD
+			f*: INTEGER; (**documentation...*)
+			g: REAL
+		END;
+		
+		T1* = RECORD (T) (*documentation...*)
+			h: INTEGER
+		END;
+		
+		T2 = RECORD
+			(*f*: INTEGER*)
+		END;
+		
+	VAR
+		x*, y: T; (**documentation...*)
+		z, u*: F.File;
+		
+	PROCEDURE P*;
+(**documentation,
+documentation...*)
+	END P;
+	
+	
+	PROCEDURE Q;
+(*documentation...*)
+	END Q;
+	
+	
+	PROCEDURE R*;
+(**documentation...*)
+	END R;
+		
+END ExportedFeatures.

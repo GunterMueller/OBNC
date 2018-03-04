@@ -1,0 +1,232 @@
+#!/bin/sh
+
+# Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly defaultPrefix="$(dirname "$(cd "$(dirname "$0")"; pwd -P)")"
+readonly prefix="${OBNC_PREFIX:-$defaultPrefix}"
+
+readonly outputDir="obncdoc"
+readonly indexFile="$outputDir/index.html"
+readonly cssFile="$outputDir/style.css"
+readonly libraryTitle="Library $(basename "$PWD")"
+
+readonly extractionCommand="$prefix/bin/obncdoc-extract"
+readonly markupCommand="$prefix/bin/obncdoc-markup"
+
+readonly css='body {
+	font-family: sans-serif;
+	margin: 1em;
+}
+
+pre {
+	font-family: inherit;
+	font-size: inherit;
+	
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+}
+
+pre em {
+	font-style: normal;
+	font-weight: bold;
+}
+
+pre .comment {
+	color: #800000;
+	display: inline-block;
+	max-width: 42em;
+	vertical-align: text-top;
+
+	white-space: pre-wrap;
+	white-space: -moz-pre-wrap;
+	white-space: -pre-wrap;
+	white-space: -o-pre-wrap;
+	word-wrap: break-word;
+}
+
+pre .string {
+	color: #767676;
+}'
+
+
+PrintHtmlHeader()
+{
+	local title="$1"
+	
+	local cssHref="$(basename "$cssFile")"
+	echo "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>$title</title>
+		<link rel='stylesheet' type='text/css' href='$cssHref' />
+	</head>
+	<body>"
+}
+
+
+PrintHtmlFooter()
+{
+	echo '</body></html>'
+}
+
+
+CreateHtmlDefinition()
+{
+	local module="$1"
+	local txtDefFile="$2"
+	local outputFile="$3"
+
+	PrintHtmlHeader "DEFINITION $module" > "$outputFile"
+	local indexHref="$(basename "$indexFile")"
+	{
+		echo "<p><a href='$indexHref'>$libraryTitle</a></p>"
+		echo "<pre>"
+		"$markupCommand" < "$txtDefFile"
+		echo "</pre>"
+		PrintHtmlFooter
+	} >> "$outputFile"
+}
+
+
+CreateDefinitions()
+{
+	local sourceFiles="$(find . -maxdepth 1 -name '*.obn')"
+	echo "$sourceFiles" | while read -r sourceFile; do
+		module="$(basename "$sourceFile" .obn)"
+		textOutputFile="$outputDir/$module.def"
+		htmlOutputFile="$textOutputFile.html"
+		if [ ! -f "$textOutputFile" ] || [ "$textOutputFile" -ot "$sourceFile" ]; then
+			"$extractionCommand" < "$sourceFile" > "$textOutputFile"
+			if [ "$(wc -l < "$textOutputFile")" -gt 2 ]; then
+				CreateHtmlDefinition "$module" "$textOutputFile" "$htmlOutputFile"
+			else
+				#delete empty definition
+				rm -f "$textOutputFile"
+			fi
+		fi
+	done
+}
+
+
+DeleteOrphanedDefinitions()
+{
+	for def in $outputDir/*.def; do
+		if [ -f "$def" ]; then
+			local module="$(basename "$def" .def)"
+			local source="$module.obn"
+			if [ ! -f "$source" ]; then
+				rm "$def"
+				rm -f "$def.html"
+			fi
+		fi
+	done
+}
+
+
+CreateIndex()
+{
+	PrintHtmlHeader "$libraryTitle" > "$indexFile"
+	echo "<p><a href='../index.html'>Library Index</a></p>" >> "$indexFile"
+	local definitions="$(find "$outputDir" -name '*.def' | sort)"
+	if [ -n "$definitions" ]; then
+		echo "<pre>" >> "$indexFile"
+		echo "$definitions" | while read -r def; do
+			#list only non-empty definitions
+			if [ "$(wc -l < "$def")" -gt 2 ]; then
+				module="$(basename "$def" .def)"
+				echo "DEFINITION <a href='$module.def.html'>$module</a>" >> "$indexFile"
+			fi
+		done
+		echo "</pre>" >> "$indexFile"
+	else
+		echo "<p>(Empty)</p>" >> "$indexFile"
+	fi
+	PrintHtmlFooter >> "$indexFile"
+}
+
+
+PrintHelp()
+{
+	printf "obncdoc - extract exported features from Oberon modules\n"
+	printf "\n"
+	printf "usage:\n"
+	printf "\tobncdoc [-h | -v]\n"
+	printf "\n"
+	printf "\t-h\tdisplay help and exit\n"
+	printf "\t-v\tdisplay version and exit\n"
+
+}
+
+
+PrintVersion()
+{
+	"$prefix/bin/obnc-compile" -v
+}
+
+
+ExitInvalidCommand()
+{
+	echo "obncdoc: invalid command. Try 'obncdoc -h' for more information." >&2
+	exit 1
+}
+
+
+Run()
+{
+	local helpWanted=false
+	local versionWanted=false
+	local arg=
+	
+	for arg in "$@"; do
+		case "$arg" in
+			-h)
+				helpWanted=true;;
+			-v)
+				versionWanted=true;;
+			*)
+				ExitInvalidCommand
+		esac
+	done
+	
+	if "$helpWanted"; then
+		PrintHelp
+	elif "$versionWanted"; then
+		PrintVersion
+	else
+		local sourceFiles="$(ls ./*.obn 2> /dev/null)"
+		if [ -n "$sourceFiles" ]; then
+			mkdir -p "$outputDir"
+			CreateDefinitions
+			DeleteOrphanedDefinitions
+			CreateIndex
+			if [ ! -f "$cssFile" ]; then
+				echo "$css" > "$cssFile"
+			fi
+		else
+			echo "$0: error: no oberon files" >&2
+			exit 1
+		fi
+	fi
+}
+
+Run "$@"
