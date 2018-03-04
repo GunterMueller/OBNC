@@ -1,0 +1,111 @@
+#!/bin/sh
+
+# Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of obnc-libstd.
+#
+# obnc-libstd is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# obnc-libstd is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with obnc-libstd.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly defaultPathPrefix="/usr/local"
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly packageName="$(basename "$selfDirPath")"
+readonly packageNameSansVersion="${packageName%-[0-9]*}"
+readonly libName="${packageNameSansVersion#obnc-lib}"
+
+readonly modules="$(ls "$selfDirPath/$libName"/*.obn | grep -v 'Test\.obn$' | while read file; do basename "${file%.obn}"; done)"
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+Install()
+{
+	local pathPrefix="$1"
+	local srcDir="$selfDirPath/$libName"
+
+	#install library
+	local destDir="$pathPrefix/lib/obnc/$libName"
+	EchoAndRun mkdir -p "$destDir/.obnc"
+	local module=
+	for module in $modules; do
+		EchoAndRun cp "$srcDir/.obnc/$module.o" "$destDir/.obnc"
+		EchoAndRun cp "$srcDir/.obnc/$module.h" "$destDir/.obnc"
+		EchoAndRun cp "$srcDir/.obnc/$module.sym" "$destDir/.obnc"
+		if [ -e "$srcDir/.obnc/$module.imp" ]; then
+			EchoAndRun cp "$srcDir/.obnc/$module.imp" "$destDir/.obnc"
+		fi		
+		if [ -e "$srcDir/$module.env" ]; then
+			EchoAndRun cp "$srcDir/$module.env" "$destDir"
+		fi
+	done
+	
+	#install documentation
+	destDir="$pathPrefix/share/doc/obnc/$libName"
+	EchoAndRun mkdir -p "$destDir"
+	cd "$srcDir"
+	EchoAndRun cp -R "$srcDir/obncdoc" "$destDir"
+	cd "$selfDirPath"
+}
+
+
+Uninstall()
+{
+	local pathPrefix="$1"
+	
+	#delete library files
+	local path="$pathPrefix/lib/obnc/$libName"
+	local module=
+	for module in $modules; do
+		EchoAndRun rm -f "$path/.obnc/$module.o"
+		EchoAndRun rm -f "$path/.obnc/$module.h"
+		EchoAndRun rm -f "$path/.obnc/$module.sym"
+		EchoAndRun rm -f "$path/.obnc/$module.imp"
+		EchoAndRun rm -f "$path/$module.env"
+	done
+	
+	#delete documentation
+	EchoAndRun rm -f "$pathPrefix/share/doc/obnc/$libName/obncdoc"/*
+}
+
+
+Help()
+{
+	echo "usage: "
+	printf "\tinstall [u] [PATH-PREFIX]\n"
+	printf "\tinstall -h\n"
+}
+
+case "$#" in
+	0) Install "$defaultPathPrefix";;
+	1)
+		case "$1" in
+			-h) Help;;
+			-*) Help >&2; exit 1;;
+			u) Uninstall "$defaultPathPrefix";;
+			*) Install "$1"
+		esac;;
+	2) 
+		if [ "$1" = u ] && [ "$2" ]; then
+			Uninstall "$2"
+		else
+			Help >&2; exit 1
+		fi;;
+	*) Help >&2; exit 1
+esac

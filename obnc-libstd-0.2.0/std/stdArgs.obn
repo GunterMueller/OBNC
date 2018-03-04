@@ -1,0 +1,30 @@
+(*Copyright 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of obnc-libstd.
+
+obnc-libstd is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+obnc-libstd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with obnc-libstd.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE stdArgs;
+(**Access to program arguments*)
+
+(*implemented in C*)
+
+	VAR
+		count*: INTEGER; (**number of arguments*)
+
+	PROCEDURE Get*(n: INTEGER; VAR arg: ARRAY OF CHAR; VAR res: INTEGER);
+(**returns in arg the n:th command line argument (0 <= n < count). If the size of arg is not large enough to hold the result of the operation, the result is truncated so that arg is always terminated with a 0X. The residual number of truncated characters is assigned to res.*)
+	END Get;	
+
+END stdArgs.
