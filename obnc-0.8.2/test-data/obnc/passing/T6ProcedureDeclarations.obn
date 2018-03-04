@@ -1,0 +1,216 @@
+(*Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE T6ProcedureDeclarations;
+
+	TYPE
+		Ptr = POINTER TO RECORD f: INTEGER END;
+		Proc = PROCEDURE;
+
+	PROCEDURE TestValueParameters;
+		VAR ptr: Ptr; proc: Proc; s: ARRAY 32 OF CHAR;
+	
+		PROCEDURE P(x: INTEGER);
+		BEGIN
+			x := 0
+		END P;
+		
+		PROCEDURE P1(x: Ptr);
+		BEGIN
+			x := NIL
+		END P1;
+
+		PROCEDURE P2(x: Proc);
+		BEGIN
+			x := NIL
+		END P2;
+	
+		PROCEDURE P3(a: ARRAY OF CHAR; VAR b: ARRAY OF CHAR);
+		BEGIN
+			b := a
+		END P3;
+	
+	BEGIN
+		P(0);
+		NEW(ptr);
+		P1(ptr);
+		P2(proc);
+		P3("test", s)
+	END TestValueParameters;
+	
+	
+	PROCEDURE TestVarParameters;
+		VAR x: Ptr;
+		
+		PROCEDURE Alloc(VAR p: Ptr);
+		BEGIN
+			NEW(p);
+			p.f := 1
+		END Alloc;
+
+	BEGIN
+		Alloc(x);
+		ASSERT(x.f = 1)
+	END TestVarParameters;
+	
+
+	PROCEDURE TestPredeclaredProcedures;
+		CONST eps = 0.01;
+			(*make sure function procedures with constant parameters are constant expressions*)
+			absConst = ABS(0);
+			oddConst = ODD(0);
+			lslConst = LSL(0, 0);
+			asrConst = ASR(0, 0);
+			rorConst = ROR(0, 1);
+			floorConst = FLOOR(eps);
+			fltConst = FLT(0);
+			ordConst = ORD(TRUE);
+			chrConst = CHR(0);
+		VAR a: ARRAY 10 OF CHAR;
+			ch: CHAR;
+			n: INTEGER;
+			b: BYTE;
+			A: SET;
+			x: REAL;
+			v: POINTER TO RECORD f: INTEGER END;
+			
+	BEGIN
+		ASSERT(ABS(-1) = 1);
+		ASSERT(ABS(0) = 0);
+		ASSERT(ABS(1) = 1);
+		ASSERT(ABS(-1.0) = 1.0);
+		ASSERT(ABS(0.0) = 0.0);
+		ASSERT(ABS(1.0) = 1.0);
+
+		ASSERT(~ODD(-2));
+		ASSERT(ODD(-1));
+		ASSERT(~ODD(0));
+		ASSERT(ODD(1));
+		ASSERT(~ODD(2));
+
+		a := "";
+		ASSERT(LEN(a) = 10);
+
+		ASSERT(LSL(0, 0) = 0);
+		ASSERT(LSL(0, 1) = 0);
+		ASSERT(LSL(1, 0) = 1);
+		ASSERT(LSL(1, 1) = 2);
+
+		ASSERT(ASR(0, 0) = 0);
+		ASSERT(ASR(0, 1) = 0);
+		ASSERT(ASR(1, 0) = 1);
+		ASSERT(ASR(1, 1) = 0);
+
+		ASSERT(ROR(0, 1) = 0);
+		ASSERT(ROR(2, 1) = 1);
+
+		ASSERT(FLOOR(-1.5) = -2);
+		ASSERT(FLOOR(0.0) = 0);
+		ASSERT(FLOOR(1.5) = 1);
+
+		ASSERT(FLT(-1) = -1.0);
+		ASSERT(FLT(0) = 0.0);
+		ASSERT(FLT(1) = 1.0);
+
+		ch := 0X;
+		ASSERT(ORD(ch) = 0);
+		ASSERT(ORD("A") = 41H);
+		ASSERT(ORD(FALSE) = 0);
+		ASSERT(ORD({}) = 0);
+		ch := 80X;
+		ASSERT(ORD(ch) = 80H);
+
+		ASSERT(CHR(0) = 0X);
+		ASSERT(CHR(1) = 1X);
+		ASSERT(CHR(7FH) = 7FX);
+		ch := 7FX;
+		ASSERT(CHR(7FH) = ch);
+		b := 1;
+		ASSERT(CHR(b) = 1X);
+
+		n := 0;
+		INC(n);
+		ASSERT(n = 1);
+
+		n := 0;
+		INC(n, 10);
+		ASSERT(n = 10);
+
+		n := 0;
+		DEC(n);
+		ASSERT(n = -1);
+
+		n := 0;
+		DEC(n, 10);
+		ASSERT(n = -10);
+
+		A := {};
+		INCL(A, 0);
+		ASSERT(A = {0});
+
+		A := {0};
+		EXCL(A, 0);
+		ASSERT(A = {});
+
+		NEW(v);
+		ASSERT(v # NIL);
+		v.f := 1;
+		ASSERT(v.f = 1);
+
+		x := 1.0;
+		PACK(x, 2);
+		ASSERT(x >= 4.0 - eps);
+		ASSERT(x <= 4.0 + eps);
+
+		x := 4.0;
+		UNPK(x, n);
+		ASSERT(x >= 1.0);
+		ASSERT(x < 2.0);
+		ASSERT(n = 2)
+	END TestPredeclaredProcedures;
+
+
+	PROCEDURE TestLocalProcedures;
+		VAR s: INTEGER;
+
+		PROCEDURE Sum(n: INTEGER): INTEGER;
+
+			PROCEDURE Inner(i, acc: INTEGER): INTEGER;
+				VAR result: INTEGER;
+			BEGIN
+				IF i >= 1 THEN
+					result := Inner(i - 1, acc + i)
+				ELSE
+					result := acc
+				END
+			RETURN result
+			END Inner;
+
+		RETURN Inner(n, 0)
+		END Sum;
+
+	BEGIN
+		s := Sum(10);
+		ASSERT(s = 55)
+	END TestLocalProcedures;
+
+BEGIN
+	TestValueParameters;
+	TestVarParameters;
+	TestPredeclaredProcedures;
+	TestLocalProcedures;
+END T6ProcedureDeclarations.

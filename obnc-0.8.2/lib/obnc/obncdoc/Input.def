@@ -1,0 +1,24 @@
+DEFINITION Input;
+(*Access to keyboard, mouse and clock
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers".*)
+
+	VAR
+		TimeUnit: INTEGER; (*clock ticks per second*)
+
+	PROCEDURE Available(): INTEGER;
+(*returns the number of characters in the keyboard buffer*)
+
+	PROCEDURE Read(VAR ch: CHAR);
+(*returns (and removes) the next character from the keyboad buffer. If the buffer is empty, Read waits until a key is pressed.*)
+
+	PROCEDURE Mouse(VAR keys: SET; VAR x, y: INTEGER);
+(*returns the current mouse position (x, y) in pixels relative to the lower left corner of the screen. keys is the set of the currently pressed mouse keys (left = 2, middle = 1, right = 0).*)
+
+	PROCEDURE SetMouseLimits(w, h: INTEGER);
+(*defines the rectangle where the mouse moves (in pixels). Subsequent calls to the operation Mouse will return coordinates for x in the range 0 .. w - 1 and y in the range 0 .. h - 1.*)
+
+	PROCEDURE Time(): INTEGER;
+(*returns the time elapsed since system startup in units of size 1 / TimeUnit seconds*)
+
+END Input.

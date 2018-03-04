@@ -1,0 +1,39 @@
+.TH OBNC-COMPILE 1
+.SH NAME
+obnc-compile \- compile an Oberon module to C
+.SH SYNOPSIS
+.B obnc-compile
+[\fB\-e\fR | \fB\-l\fR]
+.IR MODULE.obn
+.br
+.B obnc-compile
+\fB\-v\fR
+.SH DESCRIPTION
+.B obnc-compile
+compiles an Oberon module to C. All output files (C implementation file, C header file, symbol file and import list file) are stored in the subdirectory
+.IR .obnc .
+.P
+The compiler accepts the Oberon language as defined in "The Programming Language Oberon", revision 2013-10-01 / 2016-05-03 (Oberon-07). The target language is ANSI C (C89).
+.SH OPTIONS
+.TP
+.BR \-e
+Create an entry point function (main).
+.TP
+.BR \-l
+Print names of imported modules to standard output and exit.
+.TP
+.BR \-v
+Display version and exit.
+.SH ENVIRONMENT
+.IP OBNC_INSTALL_PATH
+The path to the installation, for example
+.I /usr
+or
+.IR /usr/local .
+.IP OBNC_IMPORT_PATH
+See
+.BR obnc-path (1)
+.SH AUTHOR
+Written by Karl Landstr\[:o]m
+.SH "SEE ALSO"
+.BR obnc (1), obnc-path (1)

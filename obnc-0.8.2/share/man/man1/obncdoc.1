@@ -1,0 +1,18 @@
+.TH OBNCDOC 1
+.SH NAME
+obncdoc \- extract exported features from Oberon modules
+.SH SYNOPSIS
+.B obncdoc
+.SH DESCRIPTION
+.B obncdoc
+creates HTML definitions and index from Oberon source files in the current directory. Each definition contains the exported declarations and the exported comments (start with an asterisk) for the corresponding module. The definition files are created, updated or deleted only as needed. A default style file,
+.IR style.css ,
+is created only if not present. This provides for custom style sheets. All output is written to the directory
+.IR obncdoc .
+Oberon source files are expected to have the filename extension
+.IR .obn .
+.P
+.B obncdoc
+is not a complete parser so no syntax (or semantics) checks are performed. Also, for exported identifiers, a source file is expected to have at most one declaration per line.
+.SH AUTHOR
+Written by Karl Landstr\[:o]m

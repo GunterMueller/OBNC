@@ -1,0 +1,313 @@
+(*Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE T4Expressions;
+
+	VAR
+		n: INTEGER;
+
+	PROCEDURE TestDesignators;
+		VAR A: ARRAY 3, 4 OF INTEGER;
+	
+		PROCEDURE IncNReturnZero(): INTEGER;
+		BEGIN
+			INC(n)
+		RETURN 0
+		END IncNReturnZero;
+	
+	BEGIN
+		A[1, 2] := 1;
+		ASSERT(A[1, 2] = A[1][2]);
+		
+		n := 0;
+		A[0, 0] := ABS(A[IncNReturnZero(), IncNReturnZero()]);
+		ASSERT(n = 2)
+	END TestDesignators;
+
+
+	PROCEDURE TestRelationalOperations;
+		TYPE
+			T = POINTER TO RECORD END;
+			T1 = POINTER TO RECORD (T) END;
+			
+		VAR b, b1: BOOLEAN;
+			ch, ch1: CHAR;
+			n: INTEGER;
+			x: REAL;
+			y: BYTE;
+			A, B: SET;
+			str: ARRAY 24 OF CHAR;
+			str1: ARRAY 32 OF CHAR;
+			t: T;
+			t1: T1;
+	BEGIN
+		(*booleans*)
+		ASSERT(TRUE = TRUE);
+		ASSERT(TRUE # FALSE);
+		b := TRUE;
+		b1 := FALSE;
+		ASSERT(b = TRUE);
+		ASSERT(b1 # TRUE);
+
+		(*characters / single-character strings*)
+		ch := 0X;
+		ch1 := "a";
+		ASSERT(ch = 0X);
+		ASSERT(ch # "a");
+		ASSERT(ch < ch1);
+		ASSERT(ch <= 0X);
+		ASSERT(ch <= "a");
+		ASSERT(ch1 > ch);
+		ASSERT(ch >= 0X);
+		ASSERT("a" >= ch);
+		ch := 7FX;
+		ch1 := 80X;
+		ASSERT(ch < ch1);
+
+		(*integers*)
+		ASSERT(0 = 0);
+		ASSERT(0 # 1);
+		ASSERT(0 < 1);
+		ASSERT(0 <= 0);
+		ASSERT(0 <= 1);
+		ASSERT(1 > 0);
+		ASSERT(0 >= 0);
+		ASSERT(1 >= 0);
+		ASSERT(0 IN {0});
+		ASSERT(~(1 IN {0}));
+		n := 0;
+		ASSERT(n = 0);
+		ASSERT(n # 1);
+		ASSERT(n < 1);
+		ASSERT(n <= 0);
+		ASSERT(n <= 1);
+		ASSERT(n < 1);
+		ASSERT(n >= 0);
+		ASSERT(n >= -1);
+		ASSERT(n IN {0});
+		ASSERT(~(1 IN {n}));
+
+		(*real numbers*)
+		ASSERT(0.0 = 0.0);
+		ASSERT(0.0 # 1.0);
+		ASSERT(0.0 < 1.0);
+		ASSERT(0.0 <= 0.0);
+		ASSERT(0.0 <= 1.0);
+		ASSERT(1.0 > 0.0);
+		ASSERT(0.0 >= 0.0);
+		ASSERT(1.0 >= 0.0);
+		x := 0.0;
+		ASSERT(x = 0.0);
+		ASSERT(x # 1.0);
+		ASSERT(x < 1.0);
+		ASSERT(x <= 0.0);
+		ASSERT(x <= 1.0);
+		ASSERT(1.0 > x);
+		ASSERT(x >= 0.0);
+		ASSERT(x >= -1.0);
+	
+		(*bytes*)
+		y := 0; 
+		ASSERT(y = 0);
+		ASSERT(y < 1);
+		ASSERT(y <= 0);
+		ASSERT(y <= 1);
+		ASSERT(1 > y);
+		ASSERT(y >= 0);
+		ASSERT(y IN {0});
+		ASSERT(~(1 IN {y}));
+
+		(*sets*)
+		ASSERT({0, 1} = {1, 0});
+		ASSERT({0} # {0, 1});
+		ASSERT({1 .. 0} = {});
+		n := 1;
+		ASSERT({n .. 0} = {});
+		A := {0};
+		B := {0, 1};
+		ASSERT(A = {0});
+		ASSERT(B # {0});
+		ASSERT(A # B);
+
+		(*strings / characters / character arrays*)
+		ASSERT("foo" = "foo");
+		ASSERT("foo" # "bar");
+		ASSERT("bar" < "foo");
+		ASSERT("foo" <= "foo");
+		ASSERT("bar" <= "foo");
+		ASSERT("foo" > "bar");
+		ASSERT("foo" >= "foo");
+		ASSERT("foo" >= "bar");
+		ch := "b";
+		ASSERT("b" = ch);
+		ASSERT("f" # ch);
+		ASSERT(ch < "c");
+		ASSERT("b" <= ch);
+		ASSERT("a" <= ch);
+		ASSERT("c" > ch);
+		ASSERT("b" >= ch);
+		ASSERT("c" >= ch);
+		str := "foo";
+		ASSERT("foo" = str);
+		ASSERT("fool" # str);
+		ASSERT("fo" # str);
+		ASSERT("bar" # str);
+		ASSERT("bar" < str);
+		ASSERT("fo" < str);
+		ASSERT("foo" <= str);
+		ASSERT("bar" <= str);
+		ASSERT("qux" > str);
+		ASSERT("foo" >= str);
+		ASSERT("qux" >= str);
+		str1 := "bar";
+		ASSERT(~(str = str1));
+		ASSERT(str # str1);
+		ASSERT(~(str < str1));
+		ASSERT(~(str <= str1));
+		ASSERT(str > str1);
+		ASSERT(str >= str1);
+		str[0] := 7FX; str[1] := 0X;
+		str1[0] := 80X; str1[1] := 0X;
+		ASSERT(str < str1);
+		
+		(*pointers*)
+		NEW(t1);
+		t := t1;
+		ASSERT(t = t1);
+		ASSERT(t1 = t)
+	END TestRelationalOperations;
+
+
+	PROCEDURE TestAdditiveOperations;
+		CONST eps = 0.01;
+		VAR b: BOOLEAN;
+			n: INTEGER;
+			x: REAL;
+			y: BYTE;
+			A: SET;
+	BEGIN
+		(*booleans*)
+		ASSERT(TRUE OR TRUE);
+		ASSERT(TRUE OR FALSE);
+		ASSERT(FALSE OR TRUE);
+		b := TRUE;
+		ASSERT(b OR TRUE);
+		ASSERT(b OR FALSE);
+		ASSERT(FALSE OR b);
+
+		(*integers*)
+		ASSERT(1 + 1 = 2);
+		ASSERT(1 - 1 = 0);
+		n := 1;
+		ASSERT(+n = +1);
+		ASSERT(-n = -1);
+		ASSERT(n + 1 = 2);
+		ASSERT(n - 1 = 0);
+		ASSERT(-n + 1 = 0);
+		ASSERT(-n - 1 = -2);
+	
+		(*reals*)
+		ASSERT(1.0 + 1.0 >= 2.0 - eps);
+		ASSERT(1.0 + 1.0 <= 2.0 + eps);
+		ASSERT(1.0 - 1.0 >= -eps);
+		ASSERT(1.0 - 1.0 <= eps);
+		x := 1.0;
+		ASSERT(+x = +1.0);
+		ASSERT(-x = -1.0);	
+		ASSERT(x + 1.0 >= 2.0 - eps);
+		ASSERT(x + 1.0 <= 2.0 + eps);
+		ASSERT(x - 1.0 >= -eps);
+		ASSERT(x - 1.0 <= eps);
+		ASSERT(-x + 1.0 >= - eps);
+		ASSERT(-x + 1.0 <= eps);
+		ASSERT(-x - 1.0 >= -2.0 - eps);
+		ASSERT(-x - 1.0 <= -2.0 + eps);
+	
+		(*bytes*)
+		y := 1;
+		ASSERT(+y = +1);
+		ASSERT(-y = -1);
+		ASSERT(y + 1= 2);
+		ASSERT(1 - y = 0);
+	
+		(*sets*)
+		ASSERT({0, 1} + (-{0, 1}) = -{});
+		ASSERT({0, 1} + {0, 2} = {0 .. 2});
+		ASSERT({0, 1} - {0, 2} = {1});
+		A := {0, 1};
+		ASSERT(A + (-{0, 1}) = -{});
+		ASSERT(A + {0, 2} = {0 .. 2});
+		ASSERT(A - {0, 2} = {1})
+	END TestAdditiveOperations;
+
+
+	PROCEDURE TestMultiplicativeOperations;
+		CONST eps = 0.01;
+		VAR b: BOOLEAN;
+			n: INTEGER;
+			x: REAL;
+			y: BYTE;
+			A: SET;
+	BEGIN
+		(*booleans*)
+		ASSERT(TRUE & TRUE);
+		b := TRUE;
+		ASSERT(b & TRUE);
+
+		(*integers*)
+		ASSERT(9 * 2 = 18);
+		ASSERT(9 DIV 4 = 2);
+		ASSERT((-9) DIV 4 = -3);
+		ASSERT(9 MOD 4 = 1);
+		ASSERT((-9) MOD 4 = 3);
+		n := -9;
+		y := 4;
+		ASSERT(n * y = -36);
+		ASSERT(n DIV y = -3);
+		ASSERT(n MOD y = 3);
+	
+		(*reals*)
+		ASSERT(9.0 * 2.0 >= 18.0 - eps);
+		ASSERT(9.0 * 2.0 <= 18.0 + eps);
+		ASSERT(9.0 / 2.0 >= 4.5 - eps);
+		ASSERT(9.0 / 2.0 <= 4.5 + eps);
+		x := 9.0;
+		ASSERT(x * 2.0 >= 18.0 - eps);
+		ASSERT(x * 2.0 <= 18.0 + eps);
+		ASSERT(x / 2.0 >= 4.5 - eps);
+		ASSERT(x / 2.0 <= 4.5 + eps);
+	
+		(*bytes*)
+		y := 9;
+		ASSERT(y * 2 = 18);
+		ASSERT(y DIV 4 = 2);
+		ASSERT(y MOD 4 = 1);
+	
+		(*sets*)
+		ASSERT({0, 1} * {1, 2} = {1});
+		ASSERT({0, 1} / {1, 2} = {0, 2});
+		A := {0, 1};
+		ASSERT(A * {1, 2} = {1});
+		ASSERT(A / {1, 2} = {0, 2})
+	END TestMultiplicativeOperations;
+
+BEGIN
+	TestDesignators;
+	TestRelationalOperations;
+	TestAdditiveOperations;
+	TestMultiplicativeOperations
+END T4Expressions.

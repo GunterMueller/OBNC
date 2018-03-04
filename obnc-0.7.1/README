@@ -1,0 +1,63 @@
+INTRODUCTION
+
+OBNC is a compiler for Niklaus Wirth's programming language Oberon. It translates Oberon modules into C code. The build command (obnc) invokes both the Oberon compiler (obnc-compile) and the host C compiler and sorts out all dependencies.
+
+OBNC follows POSIX standard. This implies that it should compile and run on a POSIX compatible operating system.
+
+
+INSTALLATION
+
+1. Make sure you have Boehm-Demers-Weiser's garbage collector GC installed on your system. To use the basic library modules Input and XYplane you also need SDL (Simple DirectMedia Layer). On a Debian system you install these dependencies with the command
+
+	apt install libgc-dev libsdl1.2-dev
+	
+2. Compile OBNC with the command
+	
+	./build
+	
+3. Optionally, run unit tests with the command
+
+	./test
+
+4. Install OBNC with the command
+
+	./install
+
+The default destination is /usr/local. If you want to use a different location, run `./install PATH'. To undo the installation, run `./install u' or `./install u PATH'.
+
+
+COMMANDS
+
+bin/obnc
+	Oberon build tool
+
+bin/obnc-compile 
+	Oberon-to-C compiler
+
+bin/obnc-path
+	Oberon module finder
+
+bin/obncdoc
+	Oberon documentation generator
+
+
+DOCUMENTATION
+
+share/doc/obnc/oberon-report.html
+	Oberon language reference
+
+share/man/man1/
+	OBNC commands
+
+lib/obnc/obncdoc/
+	Basic library modules
+
+
+LICENSE
+
+OBNC is released under the GNU General Public License, see file COPYING.
+
+
+AUTHOR
+
+Karl Landstrom <karl@miasap.se>

@@ -1,0 +1,154 @@
+#!/bin/sh
+
+# Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly defaultPathPrefix="/usr/local"
+
+readonly exeFiles="obnc obnc-compile obncdoc obncdoc-extract obncdoc-markup obnc-path"
+readonly basicModules="Files In Input Math Out Strings XYplane"
+readonly docFiles="oberon-report.html"
+readonly man1Files="obnc.1 obnc-compile.1 obncdoc.1 obnc-path.1"
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+Install()
+{
+	local pathPrefix="$1"
+
+	#install executables
+	local srcDir="$selfDirPath/bin"
+	local destDir="$pathPrefix/bin"
+	EchoAndRun mkdir -p "$destDir"
+	local file=
+	for file in $exeFiles; do
+		EchoAndRun cp "$srcDir/$file" "$destDir"
+	done
+	
+	#install basic library
+	srcDir="$selfDirPath/lib/obnc"
+	destDir="$pathPrefix/lib/obnc"
+	"$selfDirPath/build" lib
+	EchoAndRun mkdir -p "$destDir/.obnc"
+	local module=
+	for module in $basicModules; do
+		if [ -e "$srcDir/.obnc/$module.o" ]; then
+			EchoAndRun cp "$srcDir/.obnc/$module.o" "$destDir/.obnc"
+			EchoAndRun cp "$srcDir/.obnc/$module.h" "$destDir/.obnc"
+			EchoAndRun cp "$srcDir/.obnc/$module.sym" "$destDir/.obnc"
+			if [ -e "$srcDir/.obnc/$module.imp" ]; then
+				EchoAndRun cp "$srcDir/.obnc/$module.imp" "$destDir/.obnc"
+			fi
+			if [ -e "$srcDir/$module.env" ]; then
+				EchoAndRun cp "$srcDir/$module.env" "$destDir"
+			fi
+		else
+			EchoAndRun cp "$srcDir/$module".* "$destDir"
+		fi
+	done
+	EchoAndRun cp "$srcDir/OBNC_.o" "$destDir"
+	EchoAndRun cp "$srcDir/OBNC_.h" "$destDir"
+	EchoAndRun cp "$srcDir/OBNC_.env" "$destDir"
+	
+	#install documentation
+	srcDir="$selfDirPath/share/doc/obnc"
+	destDir="$pathPrefix/share/doc/obnc"
+	EchoAndRun mkdir -p "$destDir"
+	for file in $docFiles; do
+		EchoAndRun cp "$srcDir/$file" "$destDir"
+	done
+	(cd "$selfDirPath/lib/obnc" && ../../bin/obncdoc)
+	EchoAndRun cp -R "$selfDirPath/lib/obnc/obncdoc" "$destDir"
+
+	#install man pages
+	srcDir="$selfDirPath/share/man/man1"
+	destDir="$pathPrefix/share/man/man1"
+	EchoAndRun mkdir -p "$destDir"
+	for file in $man1Files; do
+		EchoAndRun cp "$srcDir/$file" "$destDir"
+	done
+}
+
+
+Uninstall()
+{
+	local pathPrefix="$1"
+	
+	#delete executables
+	local file=
+	for file in $exeFiles; do
+		EchoAndRun rm -f "$pathPrefix/bin/$file"
+	done
+
+	#delete library files
+	local module=
+	for module in $basicModules; do
+		EchoAndRun rm -f "$pathPrefix/lib/obnc/.obnc/$module.o"
+		EchoAndRun rm -f "$pathPrefix/lib/obnc/.obnc/$module.h"
+		EchoAndRun rm -f "$pathPrefix/lib/obnc/.obnc/$module.sym"
+		EchoAndRun rm -f "$pathPrefix/lib/obnc/.obnc/$module.imp"
+		EchoAndRun rm -f "$pathPrefix/lib/obnc/$module.env"
+	done
+	EchoAndRun rm -f "$pathPrefix/lib/obnc/OBNC_.o"
+	EchoAndRun rm -f "$pathPrefix/lib/obnc/OBNC_.h"
+	EchoAndRun rm -f "$pathPrefix/lib/obnc/OBNC_.env"
+	
+	#delete documentation
+	for file in $docFiles; do
+		EchoAndRun rm -f "$pathPrefix/share/doc/obnc/$file"
+	done
+	EchoAndRun rm -f "$pathPrefix/share/doc/obnc/obncdoc"/*
+
+	#delete man pages
+	for file in $man1Files; do
+		EchoAndRun rm -f "$pathPrefix/share/man/man1/$file"
+	done
+}
+
+
+Help()
+{
+	echo "usage: "
+	printf "\tinstall [u] [PATH-PREFIX]\n"
+	printf "\tinstall -h\n"
+}
+
+case "$#" in
+	0) Install "$defaultPathPrefix";;
+	1)
+		case "$1" in
+			-h) Help;;
+			-*) Help >&2; exit 1;;
+			u) Uninstall "$defaultPathPrefix";;
+			*) Install "$1"
+		esac;;
+	2) 
+		if [ "$1" = u ] && [ "$2" ]; then
+			Uninstall "$2"
+		else
+			Help >&2; exit 1
+		fi;;
+	*) Help >&2; exit 1
+esac

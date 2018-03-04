@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly packagePath="$(dirname "$selfDirPath")"
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+CleanUp()
+{
+	rm -fr "$packagePath/test-data/obnc"/*/.obnc
+	for file in "$packagePath/test-data/obnc"/*/*; do
+		if [ "${file%?.*}" = "$file" ]; then
+			rm "$file" #delete executable file
+		fi
+	done
+}
+
+CleanUp
+
+dir="$packagePath/test-data/obnc/passing"
+EchoAndRun cd "$dir"
+for module in *.obn; do
+	if EchoAndRun "$packagePath/bin/obnc" "$module"; then
+		if ! EchoAndRun "./${module%.obn}"; then
+			printf "\nPositive test failed: %s\n\n" "$dir/$module">&2
+			exit 1
+		fi
+	else
+		printf "\nPositive test failed: %s\n\n" "$dir/$module" >&2
+		exit 1
+	fi
+done
+
+dir="$packagePath/test-data/obnc/failing-at-compile-time"
+EchoAndRun cd "$dir"
+for module in *.obn; do
+	if [ "$module" != A.obn ] && [ "$module" != B.obn ]; then
+		echo "$packagePath/bin/obnc" "$module"
+		if "$packagePath/bin/obnc" "$module" 2>/dev/null; then
+			printf "\nNegative test failed: %s\n\n" "$dir/$module" >&2
+			exit 1
+		elif [ "$?" -ne 1 ]; then
+			printf "\nNegative test crashed: %s\n\n" "$dir/$module" >&2
+			exit 1
+		fi
+	fi
+done
+
+dir="$packagePath/test-data/obnc/failing-at-runtime"
+EchoAndRun cd "$dir"
+for module in *.obn; do
+	if [ "$module" != A.obn ] && [ "$module" != B.obn ]; then
+		if EchoAndRun "$packagePath/bin/obnc" "$module"; then
+			echo "./${module%.obn}"
+			if ( "./${module%.obn}" || false ) >/dev/null 2>&1; then
+				printf "\nNegative test failed: %s\n\n" "$dir/$module" >&2
+				exit 1
+			fi
+		else
+			printf "\nNegative test failed: %s\n\n" "$dir/$module" >&2
+			exit 1
+		fi
+	fi
+done
+
+CleanUp

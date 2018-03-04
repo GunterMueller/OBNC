@@ -1,0 +1,125 @@
+.TH OBNC 1
+.SH NAME
+obnc \- build an executable for an Oberon module
+.SH SYNOPSIS
+.B obnc
+[\fB\-v\fR | \fB\-V\fR]
+.IR MODULE.obn
+.br
+.B obnc
+[\fB\-h\fR | \fB\-v\fR]
+.SH DESCRIPTION
+.B obnc
+builds an executable file for an Oberon module. Before the module is compiled, object files for imported modules are recursively created or updated as needed. Oberon modules are first compiled to C with
+.BR obnc-compile .
+Each C file is then compiled to object code with an external C compiler. Finally, the object files are linked into an executable program. All output files except the final executable are stored in the subdirectory
+.IR .obnc .
+.P
+If for any module M there exists a file named
+.I M.c
+in the same directory as
+.I M.obn
+then
+.I M.c
+will be used as the input to the C compiler instead of the generated C file. This provides a mechanism to implement a module in C.
+.P
+For any module M, environment variables for the C compiler specific to M and environment variables for the linker can be defined in a file named
+.IR M.env ,
+located in the same directory as
+.IR M.obn .
+.SH OPTIONS
+.TP
+.BR \-h
+Display help and exit.
+.TP
+.BR \-v
+Without argument, display version and exit. Otherwise, output progress of compiled modules.
+.TP
+.BR \-V
+Output progress of compiled modules with compiler and linker subcommands.
+.SH ENVIRONMENT
+.IP CC
+Specifies the C compiler to use (default is cc).
+.IP CFLAGS
+Options for the C compiler.
+.IP LDFLAGS
+Additional options for the linker.
+.IP LDLIBS
+Additional libraries to link with.
+.IP OBNC_IMPORT_PATH
+See
+.BR obnc-path (1)
+.SH EXAMPLES
+.SS Getting Started
+In Oberon, the program to print "hello, world" is
+.P
+.RS
+MODULE hello;
+.P
+.RS
+IMPORT Out;
+.P
+.RE
+BEGIN
+.RS
+Out.String("hello, world");
+.br
+Out.Ln
+.RE
+END hello.
+.RE
+.P
+Save the above module to a file named
+.IR hello.obn
+and compile it with the command
+.P
+.RS
+obnc hello.obn
+.RE
+.P
+This will create an executable file named
+.IR hello .
+When you run
+.IR hello
+with the command
+.P
+.RS
+\[char46]/hello
+.RE
+.P
+it should print
+.P
+.RS
+hello, world
+.RE
+.SS Interfacing to C
+To implement a module M in C:
+.IP 1. 3
+Create a file named
+.I M.obn
+with the the exported declarations
+.IP 2. 3
+Create a file named
+.I MTest.obn
+which imports M (and preferably write unit tests for M)
+.IP 3. 3
+Build MTest with the command
+.P
+.RS
+obnc MTest.obn
+.RE
+.P
+.IP 4. 3
+Copy the generated file
+.IR .obnc/M.c
+to the current directory. Delete the generator comment on the first line and change the path in the include directive from
+.IR M.h
+to
+.IR .obnc/M.h .
+.IP 5. 3
+Implement
+.IR M.c .
+.SH AUTHOR
+Written by Karl Landstr\[:o]m
+.SH "SEE ALSO"
+.BR obnc-compile (1), obnc-path (1)

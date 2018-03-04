@@ -1,0 +1,278 @@
+#!/bin/sh
+
+#micb - MIASAP C Builder
+#
+#usage: micb MODULE.c
+#
+#Builds an executable with MODULE.c as entry point. Imported modules are compiled or recompiled as needed. For any module M, compiler, compiler flags, link flags and link libraries specific to M can be specified by setting the variables CC, CFLAGS, LDFLAGS and LDLIBS respectively in a file named M.env.
+
+# Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly micbIncludes="$selfDirPath/micb-includes"
+readonly CC="${CC:-cc}"
+readonly CFLAGS="${CFLAGS:-}"
+readonly LDFLAGS="${LDFLAGS:-}"
+readonly LDLIBS="${LDLIBS:-}"
+
+IncludeFiles()
+{
+	local filename="$1"
+	
+	local prefix="$(dirname "$filename")/"
+	prefix="${prefix#./}"
+	"$micbIncludes" < "$filename" | while read header; do echo "$prefix$header"; done
+}
+
+
+MapPut()
+{
+	local key="$1"
+	local value="$2"
+	local map="$3"
+	
+	if [ -z "$map" ]; then
+		echo "$key$(printf '\t')$value"
+	else
+		echo "$map" | \
+			awk -v key="$key" -v value="$value" \
+				'BEGIN { FS = "\t"; keyFound = 0 }
+				$1 == key { print key"\t"value; keyFound = 1 }
+				$1 != key { print $0 }
+				END { if (! keyFound) { print key"\t"value } }'
+	fi
+}
+
+
+MapHas()
+{
+	local key="$1"
+	local map="$2"
+	
+	echo "$map" | grep -q "^$key$(printf '\t')"
+}
+
+
+MapAt()
+{
+	local key="$1"
+	local map="$2"
+	
+	echo "$map" | awk -v key="$key" 'BEGIN { FS = "\t" } $1 == key { print $2 }'
+}
+
+
+EnvValue()
+{
+	local ident="$1"
+	local envFile="$2"
+	
+	local quot="'"
+	local apos='"'
+	local value="$(awk -F "[$quot$apos=]+" -v ident="$ident" '$1 == ident { print $2 }' "$envFile")"
+	eval "value=\"$value\"" #expand embedded commands, like pkg-config
+	echo "$value"
+}
+
+
+Compile()
+{
+	local cFile="$1"
+	
+	local module="${cFile%.c}"
+	local moduleCC="$CC"
+	local moduleCFLAGS=""
+	if [ -e "$module.env" ]; then
+		if [ -n "$(EnvValue CC "$module.env")" ]; then
+			moduleCC="$(EnvValue CC "$module.env")"
+		fi
+		moduleCFLAGS="$(EnvValue CFLAGS "$module.env")"
+	fi
+	local compileCommand="$moduleCC -c -o $module.o $CFLAGS $moduleCFLAGS $module.c"
+	compileCommand="$(echo "$compileCommand" | sed 's/   */ /g')"
+	echo "$compileCommand"
+	$compileCommand
+}
+
+
+UpdateObjectFile()
+{
+	local sourceFile="$1"
+	local newestFile="$2"
+	
+	local module="${sourceFile%.*}"
+	if [ "$sourceFile" = "$module.c" ]; then
+		if [ ! -e "$module.o" ] \
+				|| [ "$module.o" -ot "$newestFile" ] \
+				|| { [ -e "$module.env" ] && [ "$module.o" -ot "$module.env" ]; }; then
+			Compile "$sourceFile"
+		fi
+	fi
+}
+
+
+discoveredFiles="" #map with "filename" as key and "newest file in subgraph" as value
+
+Traverse()
+{
+	local filename="$1"
+	local nodePath="$2" #for detecting include cycles
+	local nodeHandler="$3"
+
+	discoveredFiles="$(MapPut "$filename" "" "$discoveredFiles")"
+
+	#traverse include files
+	local includeFile
+	local newestFileInSubgraph
+	local newestFile="$filename"
+	for includeFile in $(IncludeFiles "$filename"); do
+		if ! { echo "$nodePath" | grep -q -Fx "$includeFile"; }; then
+			if ! MapHas "$includeFile" "$discoveredFiles"; then
+				Traverse "$includeFile" "$nodePath\n$includeFile" "$nodeHandler"
+			fi
+			newestFileInSubgraph="$(MapAt "$includeFile" "$discoveredFiles")"
+			if [ "$newestFile" -ot "$newestFileInSubgraph" ]; then
+				newestFile="$newestFileInSubgraph"
+			fi
+		else
+			local cycle="$(echo "$nodePath" | tr '\n' ' ')$includeFile"
+			echo "$0: warning: include cycle found: $cycle" >&2
+		fi
+	done
+
+	discoveredFiles="$(MapPut "$filename" "$newestFile" "$discoveredFiles")"
+
+	"$nodeHandler" "$filename" "$newestFile"
+
+	#for a header file, also traverse the implementation file
+	local module="${filename%.*}"
+	if [ "${filename%.h}" != "$filename" ] && [ -e "$module.c" ] && ! MapHas "$module.c" "$discoveredFiles"; then
+		Traverse "$module.c" "$module.c" "$nodeHandler"
+	fi
+}
+
+
+NewestFile()
+{
+	local files="$1"
+	
+	local result="$(echo "$files" | head -n 1)"
+	for file in $files; do
+		if [ "$result" -ot "$file" ]; then
+			result="$file"
+		fi
+	done
+	echo "$result"
+}
+
+
+EnvFiles()
+{
+	local sourceFiles="$1"
+	
+	echo "$sourceFiles" \
+		| while read srcFile; do
+			envFile="${srcFile%.*}.env"
+			if [ -e "$envFile" ]; then
+				echo "$envFile"
+			fi
+		done \
+		| sort | uniq
+}
+
+
+OptionUnion()
+{
+	local ident="$1"
+	local envFiles="$2"
+
+	echo "$envFiles" \
+		| while read envFile; do
+			EnvValue "$ident" "$envFile"
+		done \
+		| tr ' ' '\n' | sort | uniq | tr '\n' ' '
+}
+
+
+Link()
+{
+	local objectFiles="$1"
+	local exeFile="$2"
+
+	local objectFileArgs="$(echo "$objectFiles" | tr '\n' ' ')"
+	local sourceFiles="$(echo "$discoveredFiles" | awk 'BEGIN { FS = "\t" } { print $1 }')"
+	local envFiles="$(EnvFiles "$sourceFiles")"
+	local ldflags="$(OptionUnion LDFLAGS "$envFiles")"
+	local ldlibs="$(OptionUnion LDLIBS "$envFiles")"
+	
+	local linkCommand="$CC -o $exeFile $ldflags $LDFLAGS $objectFileArgs $ldlibs $LDLIBS"
+	linkCommand="$(echo "$linkCommand" | sed 's/   */ /g')"
+	echo "$linkCommand"
+	$linkCommand
+}
+
+
+Build()
+{
+	local cFile="$1"
+	
+	discoveredFiles=""
+	Traverse "$cFile" "$cFile" UpdateObjectFile
+	
+	local exeFile="${cFile%.c}"
+	local cFiles="$(echo "$discoveredFiles" | awk 'BEGIN { FS = "\t" } $1 ~ /\.c$/ { print $1 }')"
+	local objectFiles="$(echo "$cFiles" | sed 's/\.c$/.o/')"
+	local newestObjectFile="$(NewestFile "$objectFiles")"
+	
+	if [ ! -e "$exeFile" ] || [ "$exeFile" -ot "$newestObjectFile" ]; then
+		Link "$objectFiles" "$exeFile"
+	else
+		echo "$exeFile is up to date"
+	fi
+}
+
+
+Run()
+{
+	local syntaxError=false
+	
+	if [ "$#" = 1 ]; then
+		case $1 in
+			-*) syntaxError=true;;
+			*.c)
+				if [ -e "$1" ]; then
+					Build "$1"
+				else
+					echo "$0: no such file: $1" >&2
+					false
+				fi;;
+			*) syntaxError=true
+		esac
+	else
+		syntaxError=true
+	fi
+	
+	if "$syntaxError"; then
+		echo "synopsis: $(basename "$0") MODULE.c" >&2
+		false
+	fi
+}
+
+Run "$@"

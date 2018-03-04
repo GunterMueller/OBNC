@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly packagePath="$(dirname "$selfDirPath")"
+
+readonly tmpdir="${TMPDIR:-/tmp}"
+
+readonly input="$packagePath/test-data/obncdoc/Test.def"
+readonly output="$tmpdir/Test.def.html.$$"
+readonly expectedOutput="$packagePath/test-data/obncdoc/Test.def.html"
+
+"$packagePath/bin/obncdoc-markup" <"$input" >"$output"
+
+if ! cmp -s "$output" "$expectedOutput"; then
+	echo "$(basename "$0") failed: files differ: $output $expectedOutput" >&2
+	exit 1
+else
+	rm -f "$output"
+fi

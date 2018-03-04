@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>DEFINITION In</title>
+		<link rel='stylesheet' type='text/css' href='style.css' />
+	</head>
+	<body>
+<p><a href='index.html'>Library obnc</a></p>
+<pre>
+DEFINITION <em>In</em>;
+<span class='comment'>(*Input from the standard input stream
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". All read operations except Char skips over preceding whitespace.*)</span>
+
+	VAR
+		Done: BOOLEAN; <span class='comment'>(*status of last operation*)</span>
+
+	PROCEDURE <em>Open</em>;
+<span class='comment'>(*included for compatibility with "The Oakwood Guidelines". On a typical Unix-like system, stdin cannot be rewinded. If Open is called when the file position is not at the beginning of stdin, the program aborts.*)</span>
+
+	PROCEDURE <em>Char</em>(VAR ch: CHAR);
+<span class='comment'>(*returns in ch the character at the current position*)</span>
+
+	PROCEDURE <em>Int</em>(VAR i: INTEGER);
+<span class='comment'>(*returns in i the integer constant at the current position according to the format
+
+	integer = digit {digit} | digit {hexDigit} "H".
+	hexDigit = digit | "A" | "B" | "C" | "D" | "E" | "F".
+*)</span>
+
+	PROCEDURE <em>Real</em>(VAR x: REAL);
+<span class='comment'>(*returns in x the real constant at the current position according to the format
+
+	real = digit {digit} "." {digit} [ScaleFactor].
+	ScaleFactor = "E" ["+" | "-"] digit {digit}.
+*)</span>
+
+	PROCEDURE <em>String</em>(VAR str: ARRAY OF CHAR);
+<span class='comment'>(*returns in str the string at the current position according to the format
+
+	string = """ {character} """ | digit {hexdigit} "X" .
+*)</span>
+
+	PROCEDURE <em>Name</em>(VAR name: ARRAY OF CHAR);
+<span class='comment'>(*Name(s) returns in s the sequence of graphical (non-whitspace) characters at the current position*)</span>
+
+END In.
+</pre>
+</body></html>

@@ -1,0 +1,143 @@
+(*Copyright (C) 2017 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE Math;
+(**General purpose mathematical functions
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers".*)
+
+(*implemented in C*)
+
+	CONST
+		pi* = 3.14159265358979;
+		e* = 2.71828182845905;
+		dummy = 0.0;
+
+	PROCEDURE sqrt*(x: REAL): REAL;
+(**returns the square root of x, where x must be positive*)
+	RETURN dummy
+	END sqrt;
+
+
+	PROCEDURE power*(base, exp: REAL): REAL;
+(**returns base raised to exp*)
+	RETURN dummy
+	END power;
+
+
+	PROCEDURE exp*(x: REAL): REAL;
+(**returns the constant e raised to x*)
+	RETURN dummy
+	END exp;
+
+
+	PROCEDURE ln*(x: REAL): REAL;
+(**returns the natural logarithm of x with base e*)
+	RETURN dummy
+	END ln;
+
+
+	PROCEDURE log*(x, base: REAL): REAL;
+(**log(x, b) returns the logarithm of x with base b*)
+	RETURN dummy
+	END log;
+
+
+	PROCEDURE round*(x: REAL): REAL;
+(**returns x rounded to the nearest integer. If the fraction part of x is in range 0.0 to 0.5 then the result is the largest integer not greater than x, otherwise the result is x rounded up to the next highest whole number. Note that integer values cannot always be exactly represented in REAL format.*)
+	RETURN dummy
+	END round;
+
+
+	PROCEDURE sin*(x: REAL): REAL;
+(**returns the sine of a radian value x*)
+	RETURN dummy
+	END sin;
+
+
+	PROCEDURE cos*(x: REAL): REAL;
+(**returns the cosine of a radian value x*)
+	RETURN dummy
+	END cos;
+
+
+	PROCEDURE tan*(x: REAL): REAL;
+(**returns the tangent of a radian value x*)
+	RETURN dummy
+	END tan;
+
+
+	PROCEDURE arcsin*(x: REAL): REAL;
+(**returns the inverse sine of x in radians, where -1 <= x <= 1*)
+	RETURN dummy
+	END arcsin;
+
+
+	PROCEDURE arccos*(x: REAL): REAL;
+(**returns the inverse cosine of x in radians, where -1 <= x <= 1*)
+	RETURN dummy
+	END arccos;
+
+
+	PROCEDURE arctan*(x: REAL): REAL;
+(**returns the inverse tangent of x in radians, where -1 <= x <= 1*)
+	RETURN dummy
+	END arctan;
+
+
+	PROCEDURE arctan2*(y, x: REAL): REAL;
+(**returns the inverse tangent in radians of y/x based on the signs of both values to determine the correct quadrant.*)
+	RETURN dummy
+	END arctan2;
+
+
+	PROCEDURE sinh*(x: REAL): REAL;
+(**returns the hyperbolic sine of x*)
+	RETURN dummy
+	END sinh;
+
+
+	PROCEDURE cosh*(x: REAL): REAL;
+(**returns the hyperbolic cosine of x*)
+	RETURN dummy
+	END cosh;
+
+
+	PROCEDURE tanh*(x: REAL): REAL;
+(**returns the hyperbolic tangent of x*)
+	RETURN dummy
+	END tanh;
+
+
+	PROCEDURE arcsinh*(x: REAL): REAL;
+(**returns the inverse hyperbolic sine of x*)
+	RETURN dummy
+	END arcsinh;
+
+
+	PROCEDURE arccosh*(x: REAL): REAL;
+(**returns the inverse hyperbolic cosine of x*)
+	RETURN dummy
+	END arccosh;
+
+
+	PROCEDURE arctanh*(x: REAL): REAL;
+(**returns the inverse hyperbolic tangent of x*)
+	RETURN dummy
+	END arctanh;
+
+END Math.
