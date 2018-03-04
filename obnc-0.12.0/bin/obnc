@@ -1,0 +1,503 @@
+#!/bin/sh
+
+# Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+export OBNC_PREFIX
+export OBNC_LIBDIR
+
+readonly defaultPrefix="$(dirname "$(cd "$(dirname "$0")"; pwd -P)")"
+readonly defaultLibDir=lib
+readonly prefix="${OBNC_PREFIX:-$defaultPrefix}"
+readonly libdir="${OBNC_LIBDIR:-$defaultLibDir}"
+
+readonly CC="${CC:-cc}"
+readonly CFLAGS="${CFLAGS:-}"
+readonly LDFLAGS="${LDFLAGS:-}"
+readonly LDLIBS="${LDLIBS:-}"
+readonly newline='
+'
+
+verbosity=0 #0 = quiet, 1 = progress, 2 = subcommands
+discoveredFiles="" #map with "filename" as key and "symbol file changed" as value
+
+PathOfGeneratedFile()
+{
+	local file="$1"
+	local dirPath="$2"
+
+	if [ -e "$dirPath/.obnc" ]; then
+		echo "$dirPath/.obnc/$file"
+	else
+		echo "$dirPath/$file"
+	fi
+}
+
+
+ImportedFiles()
+{
+	local obnFile="$1"
+
+	local clientDir="$(dirname "$obnFile")"
+	local importedModules=
+	if [ ! -e "$obnFile" ]; then
+		local module="$(basename "${obnFile%.obn}")"
+		local impFile="$(PathOfGeneratedFile "$module.imp" "$(dirname "$obnFile")")"
+		if [ -e "$impFile" ]; then
+			importedModules="$(cat "$impFile")"
+		fi
+	else
+		importedModules="$(cd "$clientDir" && "$prefix/bin/obnc-compile" -l "$(basename "$obnFile")")"
+	fi
+	if [ -n "$importedModules" ]; then
+		(
+			cd "$clientDir"
+			echo "$importedModules" \
+				| while read -r module; do
+					if path="$("$prefix/bin/obnc-path" "$module" 2>/dev/null)"; then
+						modulePath="$path/$module.obn"
+						if [ "${path##/*}" = "" ]; then
+							echo "$modulePath"
+						else
+							modulePath="$clientDir/${modulePath#./}"
+							echo "${modulePath#./}"
+						fi
+					else
+						echo "obnc: error: Module imported by $obnFile not found: $module" >&2
+						exit 1
+					fi
+				done
+		)
+	fi
+}
+
+
+MapPut()
+{
+	local key="$1"
+	local value="$2"
+	local map="$3"
+	
+	if [ -z "$map" ]; then
+		echo "$key$(printf '\t')$value"
+	else
+		echo "$map" | \
+			awk -v key="$key" -v value="$value" \
+				'BEGIN { FS = "\t"; keyFound = 0 }
+				$1 == key { print key"\t"value; keyFound = 1 }
+				$1 != key { print $0 }
+				END { if (! keyFound) { print key"\t"value } }'
+	fi
+}
+
+
+MapHas()
+{
+	local key="$1"
+	local map="$2"
+	
+	echo "$map" | grep -q "^$key$(printf '\t')"
+}
+
+
+MapAt()
+{
+	local key="$1"
+	local map="$2"
+	
+	echo "$map" | awk -v key="$key" 'BEGIN { FS = "\t" } $1 == key { print $2 }'
+}
+
+
+RunCommand()
+{
+	if [ "$verbosity" = 2 ]; then
+		echo "$@"
+	fi
+	eval "$@"
+}
+
+
+CompileOberon()
+{
+	local module="$1"
+	local isEntryPoint="$2"
+	
+	#backup current symbol file
+	local symFile=".obnc/$module.sym"
+	if [ -e "$symFile" ]; then
+		cp "$symFile" "$symFile.bak"
+	else
+		mkdir -p .obnc
+		touch "$symFile.bak"
+	fi
+
+	local entryPointOption=""
+	if "$isEntryPoint"; then
+		entryPointOption="-e"
+	fi
+	RunCommand "$prefix/bin/obnc-compile" "$entryPointOption" "$module.obn"
+}
+
+
+EnvValue()
+{
+	local ident="$1"
+	local envFile="$2"
+	
+	grep "^$ident=" "$envFile" | tail -n 1 | sed -e "s/^$ident=\(.*\)$/\1/" -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"
+}
+
+
+CompileC()
+{
+	local module="$1"
+	
+	local cFile=
+	if [ -e "$module.c" ]; then
+		cFile="$module.c"
+	else
+		cFile=".obnc/$module.c"
+	fi
+	
+	local moduleCC=
+	local moduleCFLAGS=
+	if [ -e "$module.env" ]; then
+		moduleCC="$(EnvValue CC "$module.env")"
+		moduleCFLAGS="$(EnvValue CFLAGS "$module.env")"
+	fi
+	if [ -z "$moduleCC" ]; then
+		moduleCC="$CC"
+	fi
+	RunCommand "$moduleCC" -c -o ".obnc/$module.o" $CFLAGS $moduleCFLAGS "$cFile"
+}
+
+
+Compile()
+{
+	local module="$1"
+	local dir="$2"
+	local oberonCompilationNeeded="$3"
+	local isEntryPoint="$4"
+	
+	if [ "$verbosity" = 1 ]; then
+		echo "Compiling module $module"
+	elif [ "$verbosity" = 2 ]; then
+		printf "\nCompiling module %s:\n\n" "$module"
+	fi
+
+	if [ "$verbosity" = 2 ] && [ "$dir" != "." ]; then
+		echo "cd $dir"
+	fi
+	cd "$dir"
+
+	if "$oberonCompilationNeeded"; then
+		CompileOberon "$module" "$isEntryPoint"
+	fi
+	CompileC "$module"
+	
+	cd - >/dev/null	
+}
+
+
+UpdateObjectFile()
+{
+	local obnFile="$1"
+	local importedSymFileChanged="$2"
+	local isEntryPoint="$3"
+	
+	local module="$(basename "$obnFile" .obn)"
+	local dir="$(dirname "$obnFile")"
+
+	local symFile="$dir/.obnc/$module.sym"
+	local genCFile="$dir/.obnc/$module.c"
+	local hFile="$dir/.obnc/$module.h"
+	local dirFile="$dir/.obnc/$module.dir"
+	local dirName="$(basename "$(cd "$dir"; pwd)")"
+	local dirFileUpToDate=false
+	if [ -e "$dirFile" ] && [ "$(cat "$dirFile")" = "$dirName" ]; then
+		dirFileUpToDate=true
+	fi
+	local oberonCompilationNeeded=false
+	
+	if "$importedSymFileChanged" \
+			|| [ ! -e "$genCFile" ] || [ "$genCFile" -ot "$obnFile" ] \
+			|| { "$isEntryPoint" && [ -e "$symFile" ]; } \
+			|| { ! "$isEntryPoint" && { \
+				[ ! -e "$symFile" ] || [ "$symFile" -ot "$obnFile" ] \
+				|| [ ! -e "$hFile" ] || [ "$hFile" -ot "$obnFile" ] \
+				|| ! "$dirFileUpToDate"; }; }; then
+		oberonCompilationNeeded=true
+	fi
+
+	local objectFile="$dir/.obnc/$module.o"
+	local envFile="$dir/$module.env"
+	local nonGenCFile="$dir/$module.c"
+	local cCompilationNeeded=false
+
+	if "$oberonCompilationNeeded" \
+			|| [ ! -e "$objectFile" ] \
+			|| { [ ! -e "$nonGenCFile" ] && [ "$objectFile" -ot "$genCFile" ]; } \
+			|| { [ -e "$nonGenCFile" ] && [ "$objectFile" -ot "$nonGenCFile" ]; } \
+			|| { [ -e "$envFile" ] && [ "$objectFile" -ot "$envFile" ]; }; then
+		cCompilationNeeded=true
+	fi
+
+	if "$oberonCompilationNeeded" || "$cCompilationNeeded"; then
+		Compile "$module" "$dir" "$oberonCompilationNeeded" "$isEntryPoint"
+	fi
+
+	if "$isEntryPoint"; then
+		rm -f "$dirFile"
+	elif ! "$dirFileUpToDate"; then
+		echo "$dirName" > "$dirFile"		
+	fi
+}
+
+
+Traverse()
+{
+	local obnFile="$1"
+	local nodePath="$2" #for detecting import cycles
+	local isRoot="$3"
+	
+	discoveredFiles="$(MapPut "$obnFile" "" "$discoveredFiles")"
+	
+	#traverse imported files
+	local importedFiles
+	local importedFile
+	local importedSymFileChanged=false
+	importedFiles="$(ImportedFiles "$obnFile")"
+	for importedFile in $importedFiles; do
+		if ! { echo "$nodePath" | grep -q -Fx "$importedFile"; }; then
+			if ! MapHas "$importedFile" "$discoveredFiles"; then
+				Traverse "$importedFile" "$nodePath${newline}$importedFile" false
+			fi
+			if [ "$(MapAt "$importedFile" "$discoveredFiles")" = true ]; then
+				importedSymFileChanged=true
+			fi
+		else
+			local cycle="$(echo "$nodePath" | tr '\n' ' ') $importedFile"
+			echo "obnc: error: import cycle found: $cycle" >&2
+			exit 1
+		fi
+	done
+	
+	local symFileChanged=false
+
+	if [ -e "$obnFile" ]; then
+		UpdateObjectFile "$obnFile" "$importedSymFileChanged" "$isRoot"
+	
+		#find out if the symbol file has changed
+		local dir="$(dirname "$obnFile")"
+		local module="$(basename "$obnFile" .obn)"
+		local symFile="$dir/.obnc/$module.sym"
+		if [ -e "$symFile.bak" ] && ! cmp -s "$symFile" "$symFile.bak"; then
+			symFileChanged=true
+		fi
+		rm -f "$symFile.bak"
+	fi
+
+	discoveredFiles="$(MapPut "$obnFile" "$symFileChanged" "$discoveredFiles")"
+}
+
+
+ObjectFiles()
+{
+	local obnFiles="$1"
+	
+	echo "$obnFiles" | \
+		while read -r file; do
+			objFile="$(PathOfGeneratedFile "$(basename "$file" .obn).o" "$(dirname "$file")")"
+			echo "${objFile#./}"
+		done
+}
+
+
+NewestFile()
+{
+	local files="$1"
+	
+	local result="$(echo "$files" | head -n 1)"
+	for file in $files; do
+		if [ "$result" -ot "$file" ]; then
+			result="$file"
+		fi
+	done
+	echo "$result"
+}
+
+
+EnvFiles()
+{
+	local objectFiles="$1"
+	
+	echo "$objectFiles" | \
+		while read -r objFile; do
+			dir="$(dirname "$objFile")"
+			if [ "$(basename "$dir")" = .obnc ]; then
+				srcDir="$(dirname "$dir")"
+			else
+				srcDir="$dir"
+			fi
+			module="$(basename "$objFile" .o)"		
+			envFile="$srcDir/$module.env";
+			if [ -e "$envFile" ]; then
+				echo "$envFile"
+			fi
+		done
+}
+
+
+OptionUnion()
+{
+	local ident="$1"
+	local envFiles="$2"
+
+	echo "$envFiles" \
+		| while read -r envFile; do
+			EnvValue "$ident" "$envFile"
+		done \
+		| tr ' ' '\n' | sort | uniq | tr '\n' ' '
+}
+
+
+Link()
+{
+	local objectFiles="$1"
+	local exeFile="$2"
+	
+	local envFiles="$(EnvFiles "$objectFiles")"
+	local ldflags="$(OptionUnion LDFLAGS "$envFiles")"
+	local ldlibs="$(OptionUnion LDLIBS "$envFiles")"
+	local objectFileArgs="$(echo "$objectFiles" | tr '\n' ' ')"
+	
+	if [ "$verbosity" = 1 ]; then
+		echo "Linking modules"
+	elif [ "$verbosity" = 2 ]; then
+		printf "\nLinking modules:\n\n"
+	fi
+	RunCommand "$CC" -o "$exeFile" "$ldflags" "$LDFLAGS" "$objectFileArgs" "$ldlibs" "$LDLIBS"
+}
+
+
+Build()
+{
+	local obnFile="$1"
+	
+	discoveredFiles=""
+	Traverse "$obnFile" "$obnFile" true
+	
+	local exeFile="${obnFile%.obn}"
+	local obnFiles="$(echo "$discoveredFiles" | awk 'BEGIN { FS = "\t" } { print $1 }')"
+	local objectFiles="$(ObjectFiles "$obnFiles")${newline}$prefix/$libdir/obnc/OBNC.o"
+	local newestObjectFile="$(NewestFile "$objectFiles")"
+	
+	if [ ! -e "$exeFile" ] || [ "$exeFile" -ot "$newestObjectFile" ]; then
+		Link "$objectFiles" "$exeFile"
+	else
+		echo "$exeFile is up to date"
+	fi
+}
+
+
+PrintHelp()
+{
+	printf "obnc - build an executable for an Oberon module\n"
+	printf "\n"
+	printf "usage:\n"
+	printf "\tobnc [-v | -V] MODULE.obn\n"
+	printf "\tobnc (-h | -v)\n"
+	printf "\n"
+	printf "\t-h\tdisplay help and exit\n"
+	printf "\t-v\tlog compiled modules, or display version and exit\n"
+	printf "\t-V\tlog compiler and linker commands\n"
+
+}
+
+
+PrintVersion()
+{
+	"$prefix/bin/obnc-compile" -v
+}
+
+
+ExitInvalidCommand()
+{
+	echo "obnc: invalid command. Try 'obnc -h' for more information." >&2
+	exit 1
+}
+
+PrintErrorOnFailure()
+{
+	if [ "$?" -gt 0 ]; then
+		echo "compilation failed" >&2
+	fi
+}
+
+
+Run()
+{
+	local helpWanted=false
+	local vSet=false
+	local inputFile=""
+	local arg
+	
+	for arg in "$@"; do
+		case "$arg" in
+			-h)
+				helpWanted=true;;
+			-v)
+				vSet=true;;
+			-V)
+				verbosity=2;;
+			-*)
+				ExitInvalidCommand;;
+			*.obn)
+				if [ -z "$inputFile" ]; then
+					inputFile="$arg"
+				else
+					ExitInvalidCommand
+				fi;;
+			*)
+				ExitInvalidCommand
+		esac
+	done
+	
+	if "$helpWanted"; then
+		PrintHelp
+	elif [ -n "$inputFile" ]; then
+		if "$vSet"; then
+			verbosity=1
+		fi
+		if [ -e "$inputFile" ]; then
+			trap PrintErrorOnFailure INT TERM EXIT
+			Build "$inputFile"
+		else
+			echo "obnc: no such file: $inputFile" >&2
+			exit 1
+		fi
+	elif "$vSet"; then
+		PrintVersion
+	else	
+		ExitInvalidCommand
+	fi
+}
+
+Run "$@"

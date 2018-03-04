@@ -1,0 +1,50 @@
+(*Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE Input;
+(**Access to keyboard, mouse and clock
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers".*)
+
+(*implemented in C*)
+
+	VAR
+		TimeUnit*: INTEGER; (**clock ticks per second*)
+
+	PROCEDURE Available*(): INTEGER;
+(**returns the number of characters in the keyboard buffer*)
+	RETURN 0 (*dummy value*)
+	END Available;
+
+	PROCEDURE Read*(VAR ch: CHAR);
+(**returns (and removes) the next character from the keyboad buffer. If the buffer is empty, Read waits until a key is pressed.*)
+	END Read;
+
+	PROCEDURE Mouse*(VAR keys: SET; VAR x, y: INTEGER);
+(**returns the current mouse position (x, y) in pixels relative to the lower left corner of the screen. keys is the set of the currently pressed mouse keys (left = 2, middle = 1, right = 0).*)
+	END Mouse;
+
+	PROCEDURE SetMouseLimits*(w, h: INTEGER);
+(**defines the rectangle where the mouse moves (in pixels). Subsequent calls to the operation Mouse will return coordinates for x in the range 0 .. w - 1 and y in the range 0 .. h - 1.*)
+	END SetMouseLimits;
+
+	PROCEDURE Time*(): INTEGER;
+(**returns the time elapsed since system startup in units of size 1 / TimeUnit seconds*)
+	RETURN 0 (*dummy value*)
+	END Time;
+
+END Input.
