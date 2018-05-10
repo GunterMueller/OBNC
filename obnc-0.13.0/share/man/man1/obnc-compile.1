@@ -1,0 +1,55 @@
+.TH OBNC-COMPILE 1
+.SH NAME
+obnc-compile \- compile an Oberon module to C
+.SH SYNOPSIS
+.B obnc-compile
+[\fB\-e\fR | \fB\-l\fR]
+.IR MODULE.obn
+.br
+.B obnc-compile
+(\fB\-h\fR | \fB\-v\fR)
+.SH DESCRIPTION
+.B obnc-compile
+compiles an Oberon module to C. All output files (C implementation file, C header file, symbol file etc.) are stored in the subdirectory
+.IR .obnc .
+.P
+The compiler accepts the Oberon language as defined in "The Programming Language Oberon", revision 2013-10-01 / 2016-05-03 (Oberon-07). The module SYSTEM provides the generally applicable procedures plus VAL, as defined in the language report. The target language is ANSI C (C89).
+.P
+The generated C file uses the exception codes below. If an exception occurs, its code is written to the standard error stream and the program is aborted.
+.P
+E1 = destination array too short for assignment
+.br
+E2 = array index out of bounds
+.br
+E3 = nil pointer dereference
+.br
+E4 = nil procedure variable call
+.br
+E5 = source in assignment is not an extension of target
+.br
+E6 = type guard failure
+.br
+E7 = unmatched expression in case statement
+.br
+E8 = assertion failure
+.SH OPTIONS
+.TP
+.BR \-e
+Create an entry point function (main).
+.TP
+.BR \-h
+Display help and exit.
+.TP
+.BR \-l
+Print names of imported modules to standard output and exit.
+.TP
+.BR \-v
+Display version and exit.
+.SH ENVIRONMENT
+.IP OBNC_IMPORT_PATH
+See
+.BR obnc-path (1)
+.SH AUTHOR
+Written by Karl Landstr\[:o]m
+.SH "SEE ALSO"
+.BR obnc (1), obnc-path (1)

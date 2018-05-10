@@ -1,0 +1,170 @@
+(*Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.*)
+
+MODULE Files;
+(**Operations on files
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers".*)
+
+(*implemented in C*)
+
+	TYPE		
+		File* = POINTER TO Handle;
+
+		Handle = RECORD END;
+
+		Rider* = RECORD
+			eof*: BOOLEAN;
+			res*: INTEGER;
+			base: File;
+			pos: INTEGER
+		END;
+
+	PROCEDURE Old*(name: ARRAY OF CHAR): File;
+(**Old(fn) searches the name fn in the directory and returns the corresponding file. If the name is not found, it returns NIL.*)
+	RETURN NIL
+	END Old;
+
+
+	PROCEDURE New*(name: ARRAY OF CHAR): File;
+(**New(fn) creates and returns a new file. The name fn is remembered for the later use of the operation Register. The file is only entered into the directory when Register is called.*)
+	RETURN NIL
+	END New;
+
+
+	PROCEDURE Register*(f: File);
+(**enters the file f into the directory together with the name provided in the operation New that created f. The file buffers are written back. Any existing mapping of this name to another file is overwritten.*)
+	END Register;
+
+
+	PROCEDURE Close*(f: File);
+(**writes back the file buffers of f. The file is still accessible by its handle f and the riders positioned on it. If a file is not modified it is not necessary to close it.*)
+	END Close;
+
+
+	PROCEDURE Purge*(f: File);
+(**resets the length of file f to 0*)
+	END Purge;
+
+
+	PROCEDURE Delete*(name: ARRAY OF CHAR; VAR res: INTEGER);
+(**Delete(fn, res) removes the directory entry for the file fn without deleting the file. If res = 0 the file has been successfully deleted. If there are variables referring to the file while Delete is called, they can still be used.*)
+	END Delete;
+
+
+	PROCEDURE Rename*(old, new: ARRAY OF CHAR; VAR res: INTEGER);
+(**Rename(oldfn, newfn, res) renames the directory entry oldfn to newfn. If res = 0 the file has been successfully renamed. If there are variables referring to the file while Rename is called, they can still be used.*)
+	END Rename;
+
+
+	PROCEDURE Length*(f: File): INTEGER;
+(**returns the number of bytes in file f*)
+	RETURN 0
+	END Length;
+
+
+	PROCEDURE GetDate*(f: File; VAR t, d: INTEGER);
+(**returns the time t and date d of the last modification of file f. The encoding is: hour = t DIV 4096; minute = t DIV 64 MOD 64; second = t MOD 64; year = d DIV 512; month = d DIV 32 MOD 16; day = d MOD 32.*)
+	END GetDate;
+
+
+	PROCEDURE Set*(VAR r: Rider; f: File; pos: INTEGER);
+(**sets the rider r to position pos in file f. The field r.eof is set to FALSE. The
+operation requires that 0 <= pos <= Length(f)*)
+	END Set;
+
+
+	PROCEDURE Pos*(VAR r: Rider): INTEGER;
+(**returns the position of the rider r*)
+	RETURN 0
+	END Pos;
+
+
+	PROCEDURE Base*(VAR r: Rider): File;
+(**returns the file to which the rider r has been set*)
+	RETURN NIL
+	END Base;
+
+	PROCEDURE Read*(VAR r: Rider; VAR x: BYTE);
+(**reads the next byte x from rider r and advances r accordingly*)
+	END Read;
+
+
+	PROCEDURE ReadInt*(VAR r: Rider; VAR i: INTEGER);
+(**reads an integer i from rider r and advances r accordingly.*)
+	END ReadInt;
+
+
+	PROCEDURE ReadReal*(VAR r: Rider; VAR x: REAL);
+(**reads a real number x from rider r and advances r accordingly.*)
+	END ReadReal;
+
+
+	PROCEDURE ReadNum*(VAR r: Rider; VAR i: INTEGER);
+(**reads an integer i from rider r and advances r accordingly. The number i is compactly encoded*)
+	END ReadNum;
+
+
+	PROCEDURE ReadString*(VAR r: Rider; VAR s: ARRAY OF CHAR);
+(**reads a sequence of characters (including the terminating 0X) from rider r and returns it in s. The rider is advanced accordingly. The actual parameter corresponding to s must be long enough to hold the character sequence plus the terminating 0X.*)
+	END ReadString;
+
+
+	PROCEDURE ReadSet*(VAR r: Rider; VAR s: SET);
+(**reads a set s from rider r and advances r accordingly*)
+	END ReadSet;
+
+
+	PROCEDURE ReadBool*(VAR r: Rider; VAR b: BOOLEAN);
+(**reads a Boolean value b from rider r and advances r accordingly*)
+	END ReadBool;
+
+
+	PROCEDURE ReadBytes*(VAR r: Rider; VAR buf: ARRAY OF BYTE; n: INTEGER);
+(**reads n bytes into buffer buf starting at the rider position r. The rider is advanced accordingly. If less than n bytes could be read, r.res contains the number of requested but unread bytes.*)
+	END ReadBytes;
+
+
+	PROCEDURE Write*(VAR r: Rider; x: BYTE);
+(**writes the byte x to rider r and advances r accordingly*)
+	END Write;
+
+
+	PROCEDURE WriteInt*(VAR r: Rider; i: INTEGER);
+(**writes the integer i to rider r and advances r accordingly*)
+	END WriteInt;
+
+
+	PROCEDURE WriteReal*(VAR r: Rider; x: REAL);
+(**writes the real number x to rider r and advances r accordingly*)
+	END WriteReal;
+
+
+	PROCEDURE WriteNum*(VAR r: Rider; i: INTEGER);
+(**writes the integer i to rider r and advances r accordingly. The number i is compactly encoded.*)
+	END WriteNum;
+
+
+	PROCEDURE WriteString*(VAR r: Rider; s: ARRAY OF CHAR);
+(**writes the sequence of characters s (including the terminating 0X) to rider r and advances r accordingly*)
+	END WriteString;
+
+
+	PROCEDURE WriteSet*(VAR r: Rider; s: SET);
+(**writes the set s to rider r and advances r accordingly*)
+	END WriteSet;
+
+
+	PROCEDURE WriteBool*(VAR r: Rider; b: BOOLEAN);
+(**writes the Boolean value b to rider r and advances r accordingly.*)
+	END WriteBool;
+
+
+	PROCEDURE WriteBytes*(VAR r: Rider; VAR buf: ARRAY OF BYTE; n: INTEGER);
+(**writes the first n bytes from buf to rider r and advances r accordingly. r.res contains the number of bytes that could not be written (e.g., due to a disk full error).*)
+	END WriteBytes;
+
+END Files.
