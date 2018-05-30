@@ -1,0 +1,18 @@
+MODULE NoExportedFeatures;
+
+	IMPORT M := Math;
+
+	CONST
+		alpha = M.pi; (*documentation*)
+
+	TYPE
+		Int = INTEGER;
+
+	VAR
+		x: INTEGER;
+		
+	PROCEDURE P;
+	END P;
+
+END NoExportedFeatures.
+

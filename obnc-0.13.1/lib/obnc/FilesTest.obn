@@ -1,0 +1,450 @@
+(*Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE FilesTest;
+
+	IMPORT Files;
+
+		
+	PROCEDURE TestOld;
+		VAR f: Files.File;
+	BEGIN
+		f := Files.Old("FilesTest.obn");
+		ASSERT(f # NIL);
+		ASSERT(f IS Files.File)
+	END TestOld;
+
+
+	PROCEDURE TestNew;
+		VAR f: Files.File;
+	BEGIN
+		f := Files.New("NewTest");
+		ASSERT(f # NIL);
+		ASSERT(f IS Files.File)
+	END TestNew;
+
+
+	PROCEDURE TestRegister;
+		VAR f: Files.File;
+			r: Files.Rider;
+			res: INTEGER;
+		
+		PROCEDURE IsRider(VAR r: Files.Rider): BOOLEAN;
+		RETURN r IS Files.Rider
+		END IsRider;
+	BEGIN
+		f := Files.New("RegisterTest");
+		ASSERT(f # NIL);
+		ASSERT(IsRider(r));
+		Files.Register(f);
+		
+		f := Files.Old("RegisterTest");
+		ASSERT(f # NIL);
+		Files.Delete("RegisterTest", res);
+		ASSERT(res = 0);
+		
+		f := Files.New("RegisterTest");
+		ASSERT(f # NIL);
+		Files.Set(r, f, 0);
+		Files.Write(r, 37);
+		Files.Close(f);
+		Files.Register(f);
+		ASSERT(Files.Length(f) = 1);
+		
+		f := Files.Old("RegisterTest");
+		ASSERT(f # NIL);
+		ASSERT(Files.Length(f) = 1);
+		Files.Delete("RegisterTest", res);
+		ASSERT(res = 0)		
+	END TestRegister;
+
+	
+	PROCEDURE TestClose;
+		VAR f: Files.File;
+			r: Files.Rider;
+	BEGIN
+		f := Files.New("CloseTest");
+		ASSERT(f # NIL);
+		Files.Set(r, f, 0);
+		Files.Write(r, 65);
+		ASSERT(Files.Length(f) <= 1);
+		Files.Close(f);
+		ASSERT(Files.Length(f) = 1)
+	END TestClose;
+	
+	
+	PROCEDURE TestPurge;
+		VAR f: Files.File;
+			r: Files.Rider;
+	BEGIN
+		f := Files.New("PurgeTest");
+		ASSERT(f # NIL);
+		Files.Set(r, f, 0);
+		Files.Write(r, 65);
+		Files.Purge(f);
+		ASSERT(Files.Length(f) = 0)
+	END TestPurge;
+
+
+	PROCEDURE TestDelete;
+		VAR f: Files.File;
+			res: INTEGER;
+	BEGIN
+		f := Files.New("DeleteTest");
+		ASSERT(f # NIL);
+		Files.Register(f);
+		f := Files.Old("DeleteTest");
+		ASSERT(f # NIL);
+		Files.Delete("DeleteTest", res);
+		ASSERT(res = 0);
+		f := Files.Old("DeleteTest");
+		ASSERT(f = NIL)
+	END TestDelete;
+
+
+	PROCEDURE TestRename;
+		VAR f: Files.File;
+			res: INTEGER;
+	BEGIN
+		f := Files.New("RenameTest");
+		ASSERT(f # NIL);
+		Files.Register(f);
+		f := Files.Old("RenameTest");
+		ASSERT(f # NIL);
+
+		Files.Rename("RenameTest", "RenameTest1", res);
+		ASSERT(res = 0);		
+		
+		f := Files.Old("RenameTest");
+		ASSERT(f = NIL);
+		f := Files.Old("RenameTest1");
+		ASSERT(f # NIL);
+		
+		Files.Delete("RenameTest1", res);
+		ASSERT(res = 0)
+	END TestRename;
+	
+	
+	PROCEDURE TestLength;
+		VAR f: Files.File;
+			res: INTEGER;
+	BEGIN
+		f := Files.New("LengthTest");
+		ASSERT(f # NIL);
+		Files.Register(f);
+		ASSERT(Files.Length(f) = 0);
+		Files.Delete("LengthTest", res);
+		ASSERT(res = 0)
+	END TestLength;
+	
+	
+	PROCEDURE TestDate;
+		VAR f: Files.File;
+			t, d: INTEGER;
+			hour, minute, second, year, month, day: INTEGER;
+	BEGIN
+		f := Files.Old("FilesTest.obn");
+		ASSERT(f # NIL);
+		Files.GetDate(f, t, d);
+		hour := t DIV 4096;
+		ASSERT(hour >= 0);
+		ASSERT(hour < 24);
+		minute := t DIV 64 MOD 64;
+		ASSERT(minute >= 0);
+		ASSERT(minute < 60);
+		second := t MOD 64;
+		ASSERT(second >= 0);
+		ASSERT(second < 60);
+		year := d DIV 512;
+		ASSERT(year >= 0);
+		month := d DIV 32 MOD 16;
+		ASSERT(month >= 1);
+		ASSERT(month <= 12);
+		day := d MOD 32;
+		ASSERT(day >= 1);
+		ASSERT(day <= 31);
+	END TestDate;
+	
+	
+	PROCEDURE TestSet;
+		VAR f: Files.File;
+			r: Files.Rider;
+	BEGIN
+		f := Files.New("SetTest");
+		ASSERT(f # NIL);
+		Files.Set(r, f, 0);
+		ASSERT(~r.eof)
+	END TestSet;
+	
+	
+	PROCEDURE TestPos;
+		VAR f: Files.File;
+			r: Files.Rider;
+	BEGIN
+		f := Files.New("PosTest");
+		ASSERT(f # NIL);
+		Files.Set(r, f, 0);
+		ASSERT(Files.Pos(r) = 0)
+	END TestPos;
+
+
+	PROCEDURE TestBase;
+		VAR f: Files.File;
+			r: Files.Rider;
+	BEGIN
+		f := Files.New("BaseTest");
+		ASSERT(f # NIL);
+		Files.Set(r, f, 0);
+		ASSERT(Files.Base(r) = f)
+	END TestBase;
+
+
+	PROCEDURE TestReadWrite;
+		VAR f: Files.File;
+			r: Files.Rider;
+			b: BYTE;
+	BEGIN
+		f := Files.New("ReadWriteTest");
+		ASSERT(f # NIL);
+		Files.Set(r, f, 0);
+		Files.Write(r, 65);
+		Files.Close(f);
+		ASSERT(Files.Length(f) = 1);
+		Files.Set(r, f, 0);
+		Files.Read(r, b);
+		ASSERT(~r.eof);
+		ASSERT(b = 65);
+		ASSERT(Files.Pos(r) = 1)
+	END TestReadWrite;
+
+
+	PROCEDURE TestReadWriteInt;
+		VAR f: Files.File;
+			r: Files.Rider;
+			i: INTEGER;
+	BEGIN
+		f := Files.New("ReadWriteIntTest");
+		ASSERT(f # NIL);
+
+		Files.Set(r, f, 0);
+		Files.WriteInt(r, 100);
+		Files.WriteInt(r, -1000);
+		Files.Close(f);
+
+		Files.Set(r, f, 0);
+		Files.ReadInt(r, i);
+		ASSERT(~r.eof);
+		ASSERT(i = 100);
+		Files.ReadInt(r, i);
+		ASSERT(~r.eof);
+		ASSERT(i = -1000);
+		Files.ReadInt(r, i);
+		ASSERT(r.eof)
+	END TestReadWriteInt;
+
+
+	PROCEDURE TestReadWriteReal;
+		VAR f: Files.File;
+			r: Files.Rider;
+			x: REAL;
+	BEGIN
+		f := Files.New("ReadWriteRealTest");
+		ASSERT(f # NIL);
+
+		Files.Set(r, f, 0);
+		Files.WriteReal(r, 3.14);
+		Files.WriteReal(r, -3.14);
+		Files.Close(f);
+
+		Files.Set(r, f, 0);
+		Files.ReadReal(r, x);
+		ASSERT(~r.eof);
+		ASSERT(x = 3.14);
+		Files.ReadReal(r, x);
+		ASSERT(~r.eof);
+		ASSERT(x = -3.14);
+		Files.ReadReal(r, x);
+		ASSERT(r.eof)
+	END TestReadWriteReal;
+	
+	
+	PROCEDURE TestReadWriteNum;
+		VAR f: Files.File;
+			r: Files.Rider;
+			i: INTEGER;
+	BEGIN
+		f := Files.New("ReadWriteNumTest");
+		ASSERT(f # NIL);
+
+		Files.Set(r, f, 0);
+		Files.WriteNum(r, 100);
+		Files.WriteNum(r, -1000);
+		Files.Close(f);
+
+		Files.Set(r, f, 0);
+		Files.ReadNum(r, i);
+		ASSERT(~r.eof);
+		ASSERT(i = 100);
+		Files.ReadNum(r, i);
+		ASSERT(~r.eof);
+		ASSERT(i = -1000);
+		Files.ReadNum(r, i);
+		ASSERT(r.eof)
+	END TestReadWriteNum;
+
+
+	PROCEDURE TestReadWriteString;
+		VAR f: Files.File;
+			r: Files.Rider;
+			s: ARRAY 32 OF CHAR;
+	BEGIN
+		f := Files.New("ReadWriteStringTest");
+		ASSERT(f # NIL);
+
+		Files.Set(r, f, 0);
+		Files.WriteString(r, "hello");
+		Files.WriteString(r, "there");
+		Files.WriteString(r, "");
+		Files.Close(f);
+
+		Files.Set(r, f, 0);
+		Files.ReadString(r, s);
+		ASSERT(~r.eof);
+		ASSERT(s = "hello");
+		Files.ReadString(r, s);
+		ASSERT(~r.eof);
+		ASSERT(s = "there");
+		Files.ReadString(r, s);
+		ASSERT(~r.eof);
+		ASSERT(s = "");		
+		Files.ReadString(r, s);
+		ASSERT(r.eof)
+	END TestReadWriteString;
+	
+	
+	PROCEDURE TestReadWriteSet;
+		VAR f: Files.File;
+			r: Files.Rider;
+			s: SET;
+	BEGIN
+		f := Files.New("ReadWriteSetTest");
+		ASSERT(f # NIL);
+
+		Files.Set(r, f, 0);
+		Files.WriteSet(r, {});
+		Files.WriteSet(r, {0});
+		Files.WriteSet(r, {0, 1});
+		Files.Close(f);
+
+		Files.Set(r, f, 0);
+		Files.ReadSet(r, s);
+		ASSERT(~r.eof);
+		ASSERT(s = {});
+		Files.ReadSet(r, s);
+		ASSERT(~r.eof);
+		ASSERT(s = {0});
+		Files.ReadSet(r, s);
+		ASSERT(~r.eof);
+		ASSERT(s = {0, 1});		
+		Files.ReadSet(r, s);
+		ASSERT(r.eof)
+	END TestReadWriteSet;
+
+
+	PROCEDURE TestReadWriteBool;
+		VAR f: Files.File;
+			r: Files.Rider;
+			b: BOOLEAN;
+	BEGIN
+		f := Files.New("ReadWriteBoolTest");
+		ASSERT(f # NIL);
+
+		Files.Set(r, f, 0);
+		Files.WriteBool(r, TRUE);
+		Files.WriteBool(r, FALSE);
+		Files.Close(f);
+
+		Files.Set(r, f, 0);
+		Files.ReadBool(r, b);
+		ASSERT(~r.eof);
+		ASSERT(b);
+		Files.ReadBool(r, b);
+		ASSERT(~r.eof);
+		ASSERT(~b);
+		Files.ReadBool(r, b);
+		ASSERT(r.eof)
+	END TestReadWriteBool;
+	
+
+	PROCEDURE TestReadWriteBytes;
+		VAR f: Files.File;
+			r: Files.Rider;
+			buf: ARRAY 4 OF BYTE;
+			i: INTEGER;
+	BEGIN
+		FOR i := 0 TO LEN(buf) - 1 DO buf[i] := i + 1 END;
+		
+		f := Files.New("ReadWriteBytesTest");
+		ASSERT(f # NIL);
+
+		Files.Set(r, f, 0);
+		Files.WriteBytes(r, buf, LEN(buf));
+		Files.WriteBytes(r, buf, LEN(buf));
+		Files.Close(f);
+
+		FOR i := 0 TO LEN(buf) - 1 DO buf[i] := 0 END;
+
+		Files.Set(r, f, 0);
+		
+		Files.ReadBytes(r, buf, LEN(buf));
+		ASSERT(~r.eof);
+		FOR i := 0 TO LEN(buf) - 1 DO
+			ASSERT(buf[i] = i + 1)
+		END;
+
+		Files.ReadBytes(r, buf, LEN(buf));
+		ASSERT(~r.eof);
+		FOR i := 0 TO LEN(buf) - 1 DO
+			ASSERT(buf[i] = i + 1)
+		END;
+		
+		Files.ReadBytes(r, buf, LEN(buf));
+		ASSERT(r.eof)
+	END TestReadWriteBytes;
+		
+BEGIN
+	TestOld;
+	TestNew;
+	TestRegister;
+	TestClose;
+	TestPurge;
+	TestDelete;
+	TestRename;
+	TestLength;
+	TestDate;
+	TestSet;
+	TestPos;
+	TestBase;
+	TestReadWrite;
+	TestReadWriteInt;
+	TestReadWriteReal;
+	TestReadWriteNum;
+	TestReadWriteString;
+	TestReadWriteSet;
+	TestReadWriteBool;
+	TestReadWriteBytes
+END FilesTest.
