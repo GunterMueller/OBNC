@@ -1,0 +1,69 @@
+(*Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.*)
+
+MODULE XYplane;
+(**Basic facilities for graphics programming
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". The drawing plane is repainted when Key is invoked. Fullscreen mode is toggled with Ctrl-f; it can also be exited with Esc.*)
+
+(*implemented in C*)
+
+	IMPORT Input;
+
+	CONST
+		(**drawing modes*)
+		draw* = 1;
+		erase* = 0;
+
+	VAR
+		X*, Y*: INTEGER; (**X = 0 and Y = 0. Included for compatibility with The Oakwood Guidlines.*)
+		W*, H*: INTEGER; (**width and height of the drawing plane in pixels*)
+
+	PROCEDURE Open*;
+(**initializes the drawing plane*)
+	END Open;
+
+	PROCEDURE Clear*;
+(**erases all pixels in the drawing plane*)
+	END Clear;
+
+	PROCEDURE Dot*(x, y, mode: INTEGER);
+(**Dot(x, y, m) draws or erases the pixel at the coordinates (x, y) relative to the lower left corner of the plane. If m = draw the pixel is drawn, if m = erase the pixel is erased.*)
+	END Dot;
+
+	PROCEDURE IsDot*(x, y: INTEGER): BOOLEAN;
+(**returns TRUE if the pixel at the coordinates (x, y) relative to the lower left corner of the screen is drawn, otherwise it returns FALSE*)
+	RETURN FALSE (*dummy value*)
+	END IsDot;
+
+	PROCEDURE Key*(): CHAR;
+(**reads the keyboard. If a key was pressed prior to invocation, its character value is returned, otherwise the result is 0X.*)
+	RETURN CHR(0) (*dummy value*)
+	END Key;
+
+(**Example:
+
+	MODULE stripes;
+	(*draw animated stripes*)
+	
+		IMPORT XYplane;
+
+		VAR
+			x, y: INTEGER;
+
+	BEGIN
+		XYplane.Open;
+		x := 0;
+		y := 0;
+		REPEAT
+			XYplane.Dot(x, y, XYplane.draw);
+			x := (x + 1) MOD XYplane.W;
+			y := (y + 1) MOD XYplane.H
+		UNTIL XYplane.Key() = "q"
+	END stripes.
+*)
+
+END XYplane.
