@@ -1,4 +1,5 @@
 --------------------
+2018-06-15: OBNC 0.13.3 released. Procedure Input.Time now returns elapsed real time instead of CPU time.
 2018-06-01: OBNC 0.13.2 contains a few corrections and improvements.
 2018-05-20: OBNC 0.13.1 handles spaces in module paths.
 2018-05-07: OBNC 0.13.0 and OBNC-libstd 0.5.0 released. Command obnc is reimplemented in C (no longer requires sh). Output from obncdoc preserves formatting of source code. All library modules are released under the Mozilla Public License.
