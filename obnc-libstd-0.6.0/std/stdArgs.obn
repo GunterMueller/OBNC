@@ -1,0 +1,19 @@
+(*Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.*)
+
+MODULE stdArgs;
+(**Access to program arguments*)
+
+(*implemented in C*)
+
+	VAR
+		count*: INTEGER; (**number of arguments*)
+
+	PROCEDURE Get*(n: INTEGER; VAR arg: ARRAY OF CHAR; VAR res: INTEGER);
+(**returns in arg the n:th command line argument (0 <= n < count). If the size of arg is not large enough to hold the result of the operation, the result is truncated so that arg is always terminated with a 0X. The residual number of truncated characters is assigned to res.*)
+	END Get;
+
+END stdArgs.

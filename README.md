@@ -62,6 +62,10 @@ The package obnc-libstd complements the basic library with modules for accessing
 obnc-libstd_0.5.0.tar.gz
 OBNC-libstd 0.5 requires OBNC 0.10 or later.
 
+obnc-libstd_0.6.0.tar.gz (24 KB)
+
+OBNC-libstd 0.6 requires OBNC 0.14 or later and vice versa.
+
 Documentation
 Oberon:
 
