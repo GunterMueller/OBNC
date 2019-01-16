@@ -1,0 +1,353 @@
+#!/usr/bin/awk -f
+
+# Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+function Indentation(line,
+	result)
+{
+	match(line, "^[ \t]+")
+	if (RLENGTH > 0) {
+		result = substr(line, RSTART, RLENGTH)
+	} else {
+		result = ""
+	}
+	return result
+}
+
+
+function MatchSyntax(line, regex,
+	regex1, pos, found, matchedString, commentLevel, insideString)
+{
+	#ignore comments and strings
+	regex1 = "("regex")|\\(\\*|\\*\\)|\""
+	match(line, regex1)
+	pos = RSTART
+	while (! found && (RSTART > 0)) {
+		matchedString = substr(line, pos, RLENGTH)
+		if ((matchedString == "(*") && ! insideString) {
+			commentLevel++
+		} else if ((matchedString == "*)") && ! insideString) {
+			commentLevel--
+		} else if ((matchedString == "\"") && (commentLevel == 0)) {
+			insideString = ! insideString
+		} else if ((commentLevel == 0) && ! insideString) {
+			found = 1
+		}
+		if (! found) {
+			pos += RLENGTH
+			match(substr(line, pos), regex1)
+			if (RSTART > 0) {
+				pos += RSTART - 1
+			} else {
+				pos = 0
+			}
+		}
+	}
+	RSTART = pos
+	return RSTART
+}
+
+
+function CommentLevelAtEndOfLine(line, currentLevel,
+	regexp, matchedString)
+{
+	regexp = "\\(\\*|\\*\\)|\""
+	match(line, regexp)
+	while (RSTART > 0) {
+		matchedString = substr(line, RSTART, RLENGTH)
+		line = substr(line, RSTART + RLENGTH)
+		if (matchedString == "(*") {
+			currentLevel++
+		} else if (matchedString == "*)") {
+			currentLevel--
+		} else if (matchedString == "\"") {
+			if (currentLevel == 0) {
+				line = substr(line, index(line, "\"") + 1)
+			}
+		}
+		match(line, regexp)
+	}
+	return currentLevel
+}
+
+
+function EndsInsideRecord(line,
+	parts)
+{
+	return MatchSyntax(line, "[^"identCharSet"]RECORD([^"identCharSet"]|$)") \
+		&& ! MatchSyntax(line, "[^"identCharSet"]END[ \t]*;")
+}
+
+
+function TrackQualifiers(line,
+	regex, matchedString)
+{
+	regex = identRegex"\\."identRegex
+	MatchSyntax(line, regex)
+	while (RSTART > 0) {
+		matchedString = substr(line, RSTART, RLENGTH)
+		line = substr(line, RSTART + RLENGTH)
+		match(matchedString, identRegex)
+		publicImports[substr(matchedString, 1, RLENGTH)] = ""
+		MatchSyntax(line, regex)
+	}
+}
+
+
+function ExportedParts(line,
+	left, right)
+{
+	match(line, "[=:;(]|\\(\\*")
+	if (RSTART > 0) {
+		left = substr(line, 1, RSTART - 1)
+		right = substr(line, RSTART)
+		if ((index(left, ",") > 0) && (currentSection != "IMPORT")) {
+			#exclude non-exported identifiers
+			gsub(identRegex"[ \t]*,[ \t]*", "", left)
+			sub("(,[ \t]*)?"identRegex"[ \t]*$", "", left)
+		}
+		gsub("\\*", "", left)
+
+		#skip past trailing semi-colon (if any)
+		if (substr(right, 1, 1) == ";") {
+			left = left ";"
+			right = substr(right, 2)
+		} else {
+			MatchSyntax(right, ";")
+			if (RSTART > 0) {
+				left = left "" substr(right, 1, RSTART)
+				right = substr(right, RSTART + 1)
+			}
+		}
+
+		#skip to trailing comment (if any)
+		match(right, "[ \t]*\\(\\*")
+		if (RSTART > 0) {
+			left = left "" substr(right, 1, RSTART - 1)
+			right = substr(right, RSTART)
+		}
+
+		sub("^[ \t]*\\(\\*([^*].*|$)", "", right) #delete non-exported comment
+		sub("^[ \t]*\\(\\*\\*", " (*", right) #unmark exported comment
+		line = left""right
+	}
+	return line
+}
+
+BEGIN {
+	leadingIdentCharSet = "A-Za-z"
+	identCharSet = leadingIdentCharSet"0-9_"
+	identRegex = "["leadingIdentCharSet"]["identCharSet"]*"
+	exportedIdentRegex = identRegex"[ \t]*\\*"
+	exportedIdentListRegex = "("identRegex"[ \t]*,[ \t]*)*"identRegex"[ \t]*\\*([ \t]*,[ \t]*"identRegex")*"
+	split("", output)
+	split("", sectionExported)
+	split("", sectionHasExportedComment)
+	split("", publicImports)
+	recordLevel = 0
+	split("", recordExported)
+	split("", exportedFieldFound)
+	moduleIdent = ""
+	currentSection = "MODULE"
+	sectionExported["MODULE"] = 1
+	commentLevel = 0
+	insideExportedComment = 0
+	insideParamList = 0
+}
+
+(commentLevel == 0) && /^[ \t]*$/ {
+	sub("\n+$", "\n\n", output[currentSection])
+	next
+}
+
+(commentLevel == 0) && ($1 == "MODULE") {
+	if (substr($2, length($2), 1) == ";") {
+		moduleIdent = substr($2, 1, length($2) - 1)
+	} else {
+		moduleIdent = $2
+	}
+	line = $0
+	sub(/MODULE/, "DEFINITION", line)
+	commentLevel = CommentLevelAtEndOfLine(line, commentLevel)
+	output[currentSection] =  output[currentSection] ExportedParts(line) "\n"
+	next
+}
+
+(commentLevel == 0) && ((currentSection != "PROCEDURE") && ($1 ~ "^(IMPORT|CONST|TYPE|VAR)$") || ($1 == "PROCEDURE") && ($2 ~ "^"identRegex)) {
+	currentSection = $1
+}
+
+(commentLevel == 0) && (currentSection == "IMPORT") {
+	commentLevel = CommentLevelAtEndOfLine($0, commentLevel)
+	output[currentSection] = output[currentSection] ExportedParts($0) "\n"
+	next
+}
+
+(commentLevel == 0) && (currentSection != "PROCEDURE") && ($1 ~ "^(CONST|TYPE|VAR)$") {
+	if (match($2$3, "^"exportedIdentRegex)) {
+		TrackQualifiers($0)
+		if (EndsInsideRecord($0)) {
+			recordExported[recordLevel + 1] = 1
+		}
+		sectionExported[$1] = 1
+	}
+	commentLevel = CommentLevelAtEndOfLine($0, commentLevel)
+	if (EndsInsideRecord($0)) {
+		recordLevel++
+	}
+	output[currentSection] = output[currentSection] ExportedParts($0) "\n"
+	next
+}
+
+(commentLevel == 0) && (currentSection ~ "^(TYPE|VAR)$") && ($0 ~ "^[ \t]*END[ \t]*([;(]|$)") {
+	if (recordExported[recordLevel]) {
+		line = $0
+		if (! exportedFieldFound[recordLevel]) {
+			sub("^[ \t]*", " ", line)
+		}
+		recordExported[recordLevel] = 0
+		exportedFieldFound[recordLevel] = 0
+		output[currentSection] = output[currentSection] ExportedParts(line) "\n"
+	}
+	recordLevel--
+	next
+}
+
+(commentLevel == 0) && ($0 ~ "^[ \t]*(PROCEDURE[ \t]+)?"exportedIdentListRegex) {
+	TrackQualifiers($0)
+	if ((recordLevel > 0) && recordExported[recordLevel]) {
+		if (! exportedFieldFound[recordLevel]) {
+			output[currentSection] = output[currentSection] "\n"
+			exportedFieldFound[recordLevel] = 1
+		}
+	}
+	commentLevel = CommentLevelAtEndOfLine($0, commentLevel)
+	output[currentSection] = output[currentSection] ExportedParts($0)
+	if (EndsInsideRecord($0)) {
+		recordLevel++
+		recordExported[recordLevel] = 1
+	} else {
+		output[currentSection] = output[currentSection] "\n"
+	}
+	sectionExported[currentSection] = 1
+	insideParamList = ($1 == "PROCEDURE") && MatchSyntax($0, "\\(") && ! MatchSyntax($0, "\\)")
+	next
+}
+
+insideParamList {
+	output[currentSection] = output[currentSection] ExportedParts($0) "\n"
+	insideParamList = ! MatchSyntax($0, "\\)")
+	next
+}
+
+(commentLevel == 0) && (currentSection ~ "^(TYPE|VAR)$") && EndsInsideRecord($0) {
+	recordLevel++
+	next
+}
+
+(commentLevel == 0) && ($1 ~ "^\\(\\*\\*?") {
+	commentLevel = CommentLevelAtEndOfLine($0, commentLevel)
+	if (match($1, "^\\(\\*\\*")) {
+		sectionHasExportedComment[currentSection] = 1
+		line = $0
+		sub(/\(\*\*/, "(*", line)
+		if (commentLevel > 0) {
+			insideExportedComment = 1
+		}
+		output[currentSection] = output[currentSection] line "\n"
+	}
+	next
+}
+
+commentLevel > 0 {
+	if (insideExportedComment) {
+		output[currentSection] = output[currentSection] $0 "\n"
+	}
+	commentLevel = CommentLevelAtEndOfLine($0, commentLevel)
+	if (commentLevel == 0) {
+		insideExportedComment = 0
+	}
+}
+
+END {
+	n = 0
+	for (key in publicImports) {
+		n++
+	}
+	if (n > 0) {
+		sectionExported["IMPORT"] = 1
+
+		#keep only public imports
+		regex = identRegex "([ \t]*:=[ \t]*" identRegex ")?[ \t]*(,[ \t]*)?"
+		left = ""
+		right = output["IMPORT"]
+		##skip keyword IMPORT
+		pos = MatchSyntax(right, "IMPORT")
+		left = substr(right, 1, pos - 1 + RLENGTH)
+		right = substr(right, pos + RLENGTH)
+		##
+		pos = MatchSyntax(right, regex)
+		while (pos > 0) {
+			import = substr(right, pos, RLENGTH)
+			split(import, importParts, "[ \t:=,]+")
+			qualifier = importParts[1]
+			if (qualifier in publicImports) {
+				left = left substr(right, 1, pos - 1 + RLENGTH)
+			} else {
+				left = left substr(right, 1, pos - 1)
+			}
+			right = substr(right, pos + RLENGTH)
+			pos = MatchSyntax(right, regex)
+		}
+		importList = left right
+		##fixup separators
+		hasFinalBlankLine = match(importList, "\n[ \t]*\n")
+		gsub(",[ \t\n]*;", ";", importList)
+		gsub("\n[ \t]*\n", "\n", importList)
+		if (hasFinalBlankLine) {
+			importList = importList "\n"
+		}
+		output["IMPORT"] = importList
+	}
+
+	split("MODULE IMPORT CONST TYPE VAR PROCEDURE", sections)
+	sectionsLen = 6
+
+	hasExportedIdent = 0
+	for (i = 3; i <= sectionsLen; i++) {
+		if (sectionExported[sections[i]]) {
+			hasExportedIdent = 1
+		}
+	}
+	if (! hasExportedIdent) {
+		sub("\n+$", "\n", output["MODULE"])
+	}
+
+	for (i = 1; i <= sectionsLen; i++) {
+		section = sections[i]
+		if (sectionExported[section]) {
+			printf "%s", output[section]
+		} else if (sectionHasExportedComment[section]) {
+			#account for exported comment preceeding an exported procedure
+			sub("^[ \t]*" section "[ \t\n]*\n", "", output[section])
+			printf "%s", output[section]
+		}
+	}
+
+	print "END " moduleIdent "."
+}

@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Copyright (C) 2017, 2018 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+
+export OBNC_PREFIX="$selfDirPath"
+export OBNC_LIBDIR="lib"
+export CC="${CC:-}"
+export CFLAGS="${CFLAGS:-} -I$selfDirPath/lib"
+#export LDLIBS=
+#if grep -q 'useGC=true' "$selfDirPath/CONFIG"; then
+#	LDLIBS="-lgc"
+#fi
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+Test()
+{
+	local test=
+
+	#test compiler modules
+	EchoAndRun cd "$selfDirPath/src"
+	for test in ?*Test.c; do
+		"$selfDirPath/bin/micb" "$test" >/dev/null
+		EchoAndRun "./${test%.c}"
+	done
+
+	#test core library module
+	EchoAndRun cd "$selfDirPath/lib/obnc"
+	"$selfDirPath/bin/micb" OBNCTest.c >/dev/null
+	EchoAndRun ./OBNCTest
+
+	#test executables
+	EchoAndRun cd "$selfDirPath/bin"
+	for test in ?*-test; do
+		echo "./$test"
+		"./$test" >/dev/null
+	done
+
+	#test basic library
+	EchoAndRun cd "$selfDirPath/lib/obnc"
+	rm -fr ".obnc"
+	local failure=false
+	for test in ?*Test.obn; do
+		#if-command prevents script from halting upon a missing non-required C library, like SDL
+		if "$selfDirPath/bin/obnc" "$test" >/dev/null; then
+			if [ -e "${test%.obn}.sh" ]; then
+				EchoAndRun "./${test%.obn}.sh"
+			else
+				EchoAndRun "./${test%.obn}"
+			fi
+		else
+			failure=true
+		fi
+	done
+
+	if ! "$failure"; then
+		printf "\nAll tests passed!\n\n"
+	else
+		printf "\nSome test(s) failed!\n\n"
+		exit 1
+	fi
+}
+
+if [ "$#" -eq 0 ]; then
+	Test
+else
+	echo "usage: test" >&2
+	exit 1
+fi
