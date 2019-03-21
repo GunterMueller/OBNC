@@ -1,0 +1,77 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE XYplaneTest;
+
+	IMPORT XYplane;
+(*
+	PROCEDURE TestPosition(x, y: INTEGER);
+		VAR withinBounds: BOOLEAN;
+	BEGIN
+		withinBounds := (x >= 0) & (x < XYplane.W)
+			& (y >= 0) & (y < XYplane.H);
+		XYplane.Clear;
+		XYplane.Dot(x, y, XYplane.draw);
+		ASSERT(withinBounds & XYplane.IsDot(x, y)
+			OR ~withinBounds & ~XYplane.IsDot(x, y));
+		XYplane.Dot(x, y, XYplane.erase);
+		ASSERT(~XYplane.IsDot(x, y))
+	END TestPosition;
+
+
+	PROCEDURE Run;
+		VAR x, y, w, h: INTEGER;
+	BEGIN
+		x := XYplane.X;
+		y := XYplane.Y;
+		w := XYplane.W;
+		h := XYplane.H;
+
+		XYplane.Open;
+
+		XYplane.Open; (*reopening test*)
+
+		(*corners*)
+
+		TestPosition(x, y);
+		TestPosition(x, y + h - 1);
+		TestPosition(x + w - 1, y + h - 1);
+		TestPosition(x, y + h - 1);
+
+		(*just outside the corners*)
+
+		TestPosition(x - 1, y);
+		TestPosition(x - 1, y - 1);
+		TestPosition(x, y - 1);
+
+		TestPosition(x - 1, y + h - 1);
+		TestPosition(x - 1, y + h);
+		TestPosition(x, y + h);
+
+		TestPosition(x + w - 1, y + h);
+		TestPosition(x + w, y + h);
+		TestPosition(x + w, y + h - 1);
+
+		TestPosition(x + w, y);
+		TestPosition(x + w, y - 1);
+		TestPosition(x + w - 1, y - 1);
+	END Run;
+
+BEGIN
+	Run
+*)
+END XYplaneTest.

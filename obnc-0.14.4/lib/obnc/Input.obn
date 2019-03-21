@@ -1,0 +1,40 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.*)
+
+MODULE Input;
+(**Access to keyboard, mouse and clock
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". This module is implemented to be used in tandem with basic module XYplane. For a console application, use module Input0 instead.*)
+
+(*implemented in C*)
+
+	IMPORT Input0;
+
+	VAR TimeUnit*: INTEGER; (**clock ticks per second*)
+
+	PROCEDURE Available*(): INTEGER;
+(**returns the number of characters in the keyboard buffer*)
+	RETURN 0 (*dummy value*)
+	END Available;
+
+	PROCEDURE Read*(VAR ch: CHAR);
+(**returns (and removes) the next character from the keyboard buffer. If the buffer is empty, Read waits until a key is pressed.*)
+	END Read;
+
+	PROCEDURE Mouse*(VAR keys: SET; VAR x, y: INTEGER);
+(**returns the current mouse position (x, y) in pixels relative to the lower left corner of the screen. keys is the set of the currently pressed mouse keys (left = 2, middle = 1, right = 0).*)
+	END Mouse;
+
+	PROCEDURE SetMouseLimits*(w, h: INTEGER);
+(**defines the rectangle where the mouse moves (in pixels). Subsequent calls to the operation Mouse will return coordinates for x in the range 0 .. w - 1 and y in the range 0 .. h - 1.*)
+	END SetMouseLimits;
+
+	PROCEDURE Time*(): INTEGER;
+(**returns the time elapsed since system startup in units of size 1 / TimeUnit seconds*)
+	RETURN 0 (*dummy value*)
+	END Time;
+
+END Input.

@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>DEFINITION Out</title>
+		<link rel='stylesheet' type='text/css' href='style.css' />
+	</head>
+	<body>
+		<p><a href='index.html'>Index</a></p>
+
+		<pre>
+DEFINITION <em>Out</em>;
+<span class='comment'>(*Output to the standard output stream
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers".*)</span>
+
+	PROCEDURE <em>Open</em>;
+<span class='comment'>(*does nothing (included for compatibility with "The Oakwood Guidelines")*)</span>
+
+	PROCEDURE <em>Char</em>(ch: CHAR);
+<span class='comment'>(*writes the character ch to the end of the output stream*)</span>
+
+	PROCEDURE <em>String</em>(s: ARRAY OF CHAR);
+<span class='comment'>(*writes the null-terminated character sequence s to the end of the output stream (without 0X).*)</span>
+
+	PROCEDURE <em>Int</em>(i, n: INTEGER);
+<span class='comment'>(*writes the integer i to the end of the output stream. If the textual representation of i requires m characters, i is right adjusted in a field of Max(n, m) characters padded with blanks at the left end. A plus sign is not written.*)</span>
+
+	PROCEDURE <em>Hex</em>(i: INTEGER);
+<span class='comment'>(*writes the integer i to the end of the output stream as a zero-padded unsigned hexadecimal number with a leading space. NOTE: This procedure is an extension to The Oakwood Guidelines.*)</span>
+
+	PROCEDURE <em>Real</em>(x: REAL; n: INTEGER);
+<span class='comment'>(*writes the real number x to the end of the output stream using an exponential form. If the textual representation of x requires m characters (including a two-digit signed exponent), x is right adjusted in a field of Max(n, m) characters padded with blanks at the left end. A plus sign of the mantissa is not written.*)</span>
+
+	PROCEDURE <em>Ln</em>;
+<span class='comment'>(*writes an end-of-line symbol to the end of the output stream*)</span>
+
+END Out.
+</pre>
+	</body>
+</html>

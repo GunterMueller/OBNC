@@ -1,0 +1,296 @@
+#!/bin/sh
+
+# Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly LEX="${LEX:-lex}"
+readonly YACC="${YACC:-yacc}"
+prefix="/usr/local"
+libdir="lib"
+useLongInt=false
+useLongReal=false
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+BuildCSource()
+{
+	EchoAndRun cd "$selfDirPath/src"
+
+	if [ ! -e lex.yy.c ] || [ ! -e lex.yy.h ] || [ lex.yy.c -ot Oberon.l ] || [ lex.yy.h -ot Oberon.l ]; then
+		EchoAndRun "$LEX" --header-file=lex.yy.h Oberon.l
+	else
+		echo "lex.yy.c and lex.yy.h is up to date"
+	fi
+
+	if [ ! -e y.tab.c ] || [ ! -e y.tab.h ] || [ y.tab.c -ot Oberon.y ]; then
+		local tmpdir="${TMPDIR:-/tmp}"
+		local bakFile="$tmpdir/y.tab.h.$$"
+
+		if [ -e y.tab.h ]; then
+			cp -p y.tab.h "$bakFile"
+			trap "rm '$bakFile'" EXIT
+		fi
+
+		#option -D is a Bison extension to POSIX yacc
+		if ! EchoAndRun "$YACC" -D parse.error=verbose -d -t Oberon.y; then
+			EchoAndRun "$YACC" -d -t Oberon.y
+		fi
+
+		#preserve timestamp of y.tab.h if it is unchanged
+		if cmp -s y.tab.h "$bakFile"; then
+			cp -p "$bakFile" y.tab.h
+		fi
+	else
+		echo "y.tab.c and y.tab.h is up to date"
+	fi
+
+	cd "$selfDirPath"
+}
+
+
+Build()
+{
+	if [ -e "VERSION" ]; then
+		local version="$(cat VERSION)"
+	else
+		local version=
+	fi
+
+	#generate configuration file for install script
+	if [ -e CONFIG ]; then
+		cp CONFIG CONFIG.bak
+		trap "rm $selfDirPath/CONFIG.bak" EXIT
+	fi
+	{
+		echo "prefix=$prefix"
+		echo "libdir=$libdir"
+		echo "useLongInt=$useLongInt"
+		echo "useLongReal=$useLongReal"
+		echo "version=$version"
+	} > CONFIG
+
+	if ! { [ -e CONFIG.bak ] && cmp -s CONFIG CONFIG.bak; }; then
+		#generate configuration header files
+		{
+			echo "#ifndef CONFIG_H"
+			echo "#define CONFIG_H"
+			echo
+			printf "#define CONFIG_DEFAULT_PREFIX \"%s\"\n" "$prefix"
+			printf "#define CONFIG_DEFAULT_LIBDIR \"%s\"\n" "$libdir"
+			printf "#define CONFIG_VERSION \"%s\"\n" "$version"
+			echo
+			echo "const char *Config_Prefix(void);"
+			echo "const char *Config_LibDir(void);"
+			echo
+			echo "#endif"
+		} > src/Config.h
+		{
+			echo "#ifndef OBNC_CONFIG_H"
+			echo "#define OBNC_CONFIG_H"
+			echo
+			echo "#ifndef OBNC_CONFIG_USE_LONG_INT"
+			if "$useLongInt"; then
+				echo "#define OBNC_CONFIG_USE_LONG_INT 1"
+			else
+				echo "#define OBNC_CONFIG_USE_LONG_INT 0"
+			fi
+			echo "#endif"
+			echo
+			echo "#ifndef OBNC_CONFIG_USE_LONG_REAL"
+			if "$useLongReal"; then
+				echo "#define OBNC_CONFIG_USE_LONG_REAL 1"
+			else
+				echo "#define OBNC_CONFIG_USE_LONG_REAL 0"
+			fi
+			echo "#endif"
+			echo
+			echo "#ifndef OBNC_CONFIG_TARGET_EMB"
+			echo "#define OBNC_CONFIG_TARGET_EMB 0"
+			echo "#endif"
+			echo
+			echo "#endif"
+		} > lib/obnc/OBNCConfig.h
+	fi
+
+	BuildCSource
+
+	#build compiler
+	EchoAndRun cd "$selfDirPath/src"
+	env CFLAGS="${CFLAGS:-}" "$selfDirPath/bin/micb" obnc-compile.c
+	if [ ! -e "$selfDirPath/bin/obnc-compile" ] || [ "$selfDirPath/bin/obnc-compile" -ot obnc-compile ]; then
+		cp obnc-compile "$selfDirPath/bin"
+	fi
+
+	#build core library module OBNC
+	EchoAndRun cd "$selfDirPath/lib/obnc"
+	"$selfDirPath/bin/micb" OBNCTest.c
+
+	#build build command
+	EchoAndRun cd "$selfDirPath/src"
+	env CFLAGS="${CFLAGS:-}" "$selfDirPath/bin/micb" obnc.c
+	if [ ! -e "$selfDirPath/bin/obnc" ] || [ "$selfDirPath/bin/obnc" -ot obnc ]; then
+		cp obnc "$selfDirPath/bin"
+	fi
+
+	#build path finder
+	EchoAndRun cd "$selfDirPath/src"
+	env CFLAGS="${CFLAGS:-}" "$selfDirPath/bin/micb" obnc-path.c
+	if [ ! -e "$selfDirPath/bin/obnc-path" ] || [ "$selfDirPath/bin/obnc-path" -ot obnc-path ]; then
+		cp obnc-path "$selfDirPath/bin"
+	fi
+
+	#build documentation generator
+	EchoAndRun cd "$selfDirPath/src"
+	env CFLAGS="${CFLAGS:-}" "$selfDirPath/bin/micb" obncdoc.c
+	if [ ! -e "$selfDirPath/bin/obncdoc" ] || [ "$selfDirPath/bin/obncdoc" -ot obncdoc ]; then
+		cp obncdoc "$selfDirPath/bin"
+	fi
+
+	cd "$selfDirPath"
+}
+
+
+Clean()
+{
+	rm -f CONFIG
+	rm -f CONFIG.bak
+
+	rm -f bin/obnc
+	rm -f bin/obnc-compile
+	rm -f bin/obnc-path
+	rm -f bin/obncdoc
+	rm -f bin/*.exe
+
+	rm -f src/obnc
+	rm -f src/obnc-compile
+	rm -f src/obnc-path
+	rm -f src/obncdoc
+	rm -f src/?*Test
+	rm -f src/*.exe
+	rm -f src/*.o
+	rm -f src/Config.h
+
+	rm -f lib/obnc/?*Test
+	rm -f lib/obnc/*.exe
+	rm -f lib/obnc/*.o
+	rm -fr lib/obnc/.obnc
+	rm -f lib/obnc/OBNCConfig.h
+}
+
+
+CleanAll()
+{
+	Clean
+	rm -f src/lex.yy.[ch]
+	rm -f src/y.tab.[ch]
+}
+
+
+PrintHelp()
+{
+	echo "usage: "
+	printf "\tbuild [c-source | clean | clean-all] [--libdir=LIBDIR] [--prefix=PREFIX] [--use-long-int] [--use-long-real]\n"
+	printf "\tbuild -h\n"
+	echo
+	printf "\tc-source\tbuild only Yacc and Lex C source files\n"
+	printf "\tclean\t\tdelete all generated files except Yacc and Lex C files\n"
+	printf "\tclean-all\tdelete all generated files\n"
+	printf "\t--libdir\tlibrary installation directory instead of lib\n"
+	printf "\t--prefix\ttoplevel installation directory instead of /usr/local\n"
+	printf "\t--use-long-int\tuse \`long' type specifier for INTEGER and SET\n"
+	printf "\t--use-long-real\tuse \`long' type specifier for REAL\n"
+	printf "\t-h\t\tdisplay help and exit\n"
+}
+
+
+ExitInvalidCommand()
+{
+	echo "invalid command. Try 'build -h' for more information." >&2
+	exit 1
+}
+
+
+PathAbsolute()
+{
+	local path="$1"
+
+	test "${prefix#/}" != "$prefix" || test "${prefix#[A-Za-z]:}" != "$prefix"
+}
+
+
+Run()
+{
+	local helpWanted=false
+	local action=
+	local arg=
+
+	for arg in "$@"; do
+		case "$arg" in
+			c-source)
+				action=c-source;;
+			clean)
+				action=clean;;
+			clean-all)
+				action=clean-all;;
+			--libdir=*)
+				libdir="${arg#--libdir=}"
+				if [ "${libdir#*/}" != "$libdir" ]; then
+					echo "libdir must be a directory name, not a path: $prefix" >&2
+					exit 1
+				fi;;
+			--prefix=*)
+				prefix="${arg#--prefix=}"
+				if ! PathAbsolute "$prefix"; then
+					echo "prefix must be an absolute path: $prefix" >&2
+					exit 1
+				fi;;
+			--use-long-int)
+				useLongInt=true;;
+			--use-long-real)
+				useLongReal=true;;
+			-h)
+				helpWanted=true;;
+			*)
+				ExitInvalidCommand
+		esac
+	done
+
+	if "$helpWanted"; then
+		PrintHelp
+	else
+		case "$action" in
+			c-source)
+				BuildCSource;;
+			clean)
+				Clean;;
+			clean-all)
+				CleanAll;;
+			*)
+				Build
+		esac
+	fi
+}
+
+Run "$@"
