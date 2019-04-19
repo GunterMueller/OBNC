@@ -1,0 +1,61 @@
+#!/usr/bin/awk -f
+
+#micb-includes - MIASAP C Builder Include files
+#
+#usage: micb-includes
+#
+#Reads C code from stdin and writes include files to stdout. Only non-system header files are considered.
+
+# Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+BEGIN {
+	insideComment = 0
+}
+
+(index($0, "/*") > 0) || (index($0, "*/") > 0) {
+	tail = $0
+	insideString = 0
+	if (insideComment) {
+		match(tail, /\*\//)
+	} else {
+		match(tail, /"|\/\*/)
+	}
+	while (RSTART > 0) {
+		delim = substr(tail, RSTART, RLENGTH)
+		if (delim == "\"") {
+			insideString = ! insideString
+		} else if (delim == "/*") {
+			insideComment = 1
+		} else {
+			insideComment = 0
+		}
+		tail = substr(tail, RSTART + RLENGTH)
+		if (insideString) {
+			match(tail, /"/)
+		} else if (insideComment) {
+			match(tail, /\*\//)
+		} else {
+			match(tail, /"|\/\*|\*\//)
+		}
+	}
+}
+
+! insideComment && /^#include[ \t]+"/ {
+	split($0, fields, /"/)
+	print fields[2]
+}

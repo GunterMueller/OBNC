@@ -1,0 +1,33 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.*)
+
+MODULE extTrap;
+(**Customization of trap handler
+
+The trap handler is called if any of the following exceptions occur:
+
+	1 = destination array too short for assignment
+	2 = array index out of bounds
+	3 = nil pointer dereference
+	4 = nil procedure variable call
+	5 = source in assignment is not an extension of target
+	6 = type guard failure
+	7 = unmatched expression in case statement
+	8 = assertion failure
+*)
+
+	TYPE
+		Handler* = PROCEDURE (exception: INTEGER; file: ARRAY OF CHAR; line: INTEGER);
+(**trap handler signature, where `exception' is the exception code, and `file' and `line' is the location in the source where the exception occurred*)
+
+	VAR
+		handle*: Handler; (**current trap handler*)
+
+	PROCEDURE SetHandler*(h: Handler);
+(**sets the trap handler to h, which must not be NIL.*)
+	END SetHandler;
+
+END extTrap.

@@ -1,0 +1,41 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of obnc-libext.
+
+obnc-libext is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+obnc-libext is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with obnc-libext.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE ArgsTest;
+
+	IMPORT Args := extArgs;
+
+	VAR
+		arg: ARRAY 8 OF CHAR;
+		shortArg: ARRAY 2 OF CHAR;
+		res: INTEGER;
+
+BEGIN
+	ASSERT(Args.count = 2);
+
+	Args.Get(0, arg, res);
+	ASSERT(arg = "foo");
+	ASSERT(res = 0);
+
+	Args.Get(1, arg, res);
+	ASSERT(arg = "bar");
+	ASSERT(res = 0);
+
+	Args.Get(0, shortArg, res);
+	ASSERT(shortArg = "f");
+	ASSERT(res = 2)
+END ArgsTest.
