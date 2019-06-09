@@ -1,0 +1,85 @@
+#!/usr/bin/awk -f
+
+#markup definition file
+
+# Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+BEGIN {
+	commentLevel = 0
+}
+
+{
+	gsub(/&/, "\\&amp;", $0)
+	gsub(/</, "\\&lt;", $0)
+	gsub(/>/, "\\&gt;", $0)
+}
+
+(commentLevel == 0) && (($1 == "DEFINITION") || ($1 == "PROCEDURE")) {
+	split($2, parts, "[ (;]")
+	ident = parts[1]
+	sub($1"[ \t]+"ident, $1" <em>"ident"</em>", $0)
+}
+
+((commentLevel == 0) && match($0, /"|\(\*/)) || ((commentLevel > 0) && match($0, /\(\*|\*\)/)) {
+	insideString = 0
+	head = ""
+	tail = $0
+	do {
+		delim = substr(tail, RSTART, RLENGTH)
+		head = head""substr(tail, 1, RSTART - 1)
+		if (delim == "\"") {
+			if (! insideString) {
+				head = head"<span class='string'>\""
+				insideString = 1
+			} else {
+				head = head"\"</span>"
+				insideString = 0
+			}
+		} else if (delim == "(*") {
+			if (commentLevel == 0) {
+				head = head"<span class='comment'>(*"
+			} else {
+				head = head"(*"
+			}
+			commentLevel++
+		} else if (delim == "*)") {
+			if (commentLevel == 1) {
+				head = head"*)</span>"
+			} else {
+				head = head"*)"
+			}
+			commentLevel--
+		} else {
+			print "obncdoc-markup: invalid match" > "/dev/stderr"
+			exit(1)
+		}
+		tail = substr(tail, RSTART + RLENGTH)
+		if (insideString) {
+			match(tail, /"/)
+		} else if (commentLevel > 0) {
+			match(tail, /\(\*|\*\)/)
+		} else {
+			match(tail, /"|\(\*|\*\)/)
+		}
+	} while (RSTART > 0)
+	$0 = head""tail
+}
+
+{
+	print $0
+}
