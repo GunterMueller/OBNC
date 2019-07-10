@@ -1,0 +1,117 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE StringsTest;
+
+	IMPORT Strings;
+
+	VAR
+		shortStr: ARRAY 4 OF CHAR;
+		s: ARRAY 14 OF CHAR;
+
+BEGIN
+	(*test Length*)
+	ASSERT(Strings.Length("") = 0);
+	shortStr := "";
+	ASSERT(Strings.Length(shortStr) = 0);
+	shortStr := 22X;
+	ASSERT(Strings.Length(shortStr) = 1);
+	shortStr := "123";
+	ASSERT(Strings.Length(shortStr) = 3);
+
+	(*test Insert*)
+	s := "cde";
+	Strings.Insert("ab", 0, s);
+	ASSERT(s = "abcde");
+	s := "adef";
+	Strings.Insert("bc", 1, s);
+	ASSERT(s = "abcdef");
+	shortStr := "ade";
+	Strings.Insert("bc", 1, shortStr);
+	ASSERT(shortStr = "abc");
+	shortStr := "aef";
+	Strings.Insert("bcd", 1, shortStr);
+	ASSERT(shortStr = "abc");
+	s := "foo bar";
+	Strings.Insert(" baz", Strings.Length(s), s);
+	ASSERT(s = "foo bar baz");
+	Strings.Insert(" qux qux qux qux qux", Strings.Length(s), s);
+	ASSERT(s = "foo bar baz q");
+
+	(*test Append*)
+	s := "";
+	Strings.Append("foo", s);
+	ASSERT(s = "foo");
+	Strings.Append(" bar", s);
+	ASSERT(s = "foo bar");
+	Strings.Append(" baz qux", s);
+	ASSERT(s = "foo bar baz q");
+
+	(*test Delete*)
+	s := "foo bar baz";
+	Strings.Delete(s, 11, 4);
+	ASSERT(s = "foo bar baz");
+	Strings.Delete(s, 7, 4);
+	ASSERT(s = "foo bar");
+	Strings.Delete(s, 0, 4);
+	ASSERT(s = "bar");
+	Strings.Delete(s, 1, 10);
+	ASSERT(s = "b");
+	Strings.Delete(s, 0, 0);
+	ASSERT(s = "b");
+	Strings.Delete(s, 0, 1);
+	ASSERT(s = "");
+
+	(*test Replace*)
+	s := "foo bar baz";
+	Strings.Replace("qux", 4, s);
+	ASSERT(s = "foo qux baz");
+	s := "foo bar";
+	Strings.Replace("qux qux qux", 5, s);
+	ASSERT(s = "foo bqux qux ");
+	s := "foo";
+	Strings.Replace(" bar", 3, s);
+	ASSERT(s = "foo bar");
+
+	(*test Extract*)
+	Strings.Extract("foo bar", 4, 3, shortStr);
+	ASSERT(shortStr = "bar");
+	Strings.Extract("foo bar", 4, 10, shortStr);
+	ASSERT(shortStr = "bar");
+	Strings.Extract("foo bar", 0, 6, shortStr);
+	ASSERT(shortStr = "foo");
+	Strings.Extract("foo bar", 7, 4, shortStr);
+	ASSERT(shortStr = "");
+
+	(*test Pos*)
+	ASSERT(Strings.Pos("", "", 0) = 0);
+	ASSERT(Strings.Pos("", "foo", 0) = 0);
+	ASSERT(Strings.Pos("", "foo", 1) = 1);
+	ASSERT(Strings.Pos("", "foo", 3) = 3);
+	ASSERT(Strings.Pos("foo", "foo", 0) = 0);
+	ASSERT(Strings.Pos("foo", "fool", 0) = 0);
+	ASSERT(Strings.Pos("ool", "fool", 0) = 1);
+	ASSERT(Strings.Pos("oo", "fool", 0) = 1);
+	ASSERT(Strings.Pos("fools", "fool", 0) = -1);
+	ASSERT(Strings.Pos("ools", "fool", 0) = -1);
+	ASSERT(Strings.Pos("ol", "fool", 1) = 2);
+
+	(*test Cap*)
+	s := "foo Bar BAZ";
+	Strings.Cap(s);
+	ASSERT(s = "FOO BAR BAZ")
+END StringsTest.

@@ -1,0 +1,225 @@
+#!/bin/sh
+
+# Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of OBNC.
+#
+# OBNC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# OBNC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with OBNC.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly prefix="$(awk -F '=' '$1 == "prefix" { print $2; }' CONFIG)"
+readonly libdir="$(awk -F '=' '$1 == "libdir" { print $2; }' CONFIG)"
+destdir=
+includeLibCSrc=false
+
+readonly scripts="obncdoc-extract obncdoc-index obncdoc-markup"
+readonly basicModules="Files In Input Input0 Math Out Strings XYplane"
+readonly docFiles="oberon-report.html"
+readonly man1Files="obnc.1 obnc-compile.1 obnc-path.1 obncdoc.1"
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+Install()
+{
+	#install core files
+	EchoAndRun mkdir -p "$destdir$prefix/bin"
+	EchoAndRun cp "bin/obnc" "$destdir$prefix/bin"
+	EchoAndRun cp "bin/obnc-compile" "$destdir$prefix/bin"
+	EchoAndRun cp "bin/obnc-path" "$destdir$prefix/bin"
+	EchoAndRun cp "bin/obncdoc" "$destdir$prefix/bin"
+	local file=
+	for file in $scripts; do
+		EchoAndRun sed -e '"s|^\(readonly defaultPrefix=\).*$|\1'"'$prefix'"'|"' \
+			-e '"s|^\(readonly defaultLibDir=\).*$|\1'"'$libdir'"'|"' \
+			'"bin/'$file'"' \> '"'$destdir$prefix/bin/$file'"'
+		EchoAndRun chmod +x "$destdir$prefix/bin/$file"
+	done
+	EchoAndRun mkdir -p "$destdir$prefix/include/obnc"
+	EchoAndRun cp "lib/obnc/OBNCConfig.h" "$destdir$prefix/include/obnc"
+	EchoAndRun cp "lib/obnc/OBNC.h" "$destdir$prefix/include/obnc"
+	EchoAndRun mkdir -p "$destdir$prefix/$libdir/obnc"
+	EchoAndRun cp "lib/obnc/OBNC.o" "$destdir$prefix/$libdir/obnc"
+	EchoAndRun cp "lib/obnc/OBNC.env" "$destdir$prefix/$libdir/obnc"
+	if "$includeLibCSrc"; then
+		EchoAndRun sed -e '"s|#include \"OBNC\.h\"|#include <obnc/OBNC.h>|"' lib/obnc/OBNC.c \> "'$destdir$prefix/$libdir/obnc/OBNC.c'"
+	fi
+
+	#install basic library
+	rm -rf "lib/obnc/.obnc"
+	local module=
+	for module in $basicModules; do
+		#allow installation to proceed even if some optional libraries (like SDL) are missing
+		if (cd "lib/obnc" && env OBNC_PREFIX="$destdir$prefix" CFLAGS="-I$destdir$prefix/include" "$destdir$prefix/bin/obnc" "${module}Test.obn"); then
+			EchoAndRun cp "lib/obnc/.obnc/$module.h" "$destdir$prefix/include/obnc"
+			EchoAndRun cp "lib/obnc/.obnc/$module.o" "$destdir$prefix/$libdir/obnc"
+			EchoAndRun cp "lib/obnc/.obnc/$module.sym" "$destdir$prefix/$libdir/obnc"
+			EchoAndRun cp "lib/obnc/.obnc/$module.imp" "$destdir$prefix/$libdir/obnc"
+			if [ -e "lib/obnc/$module.env" ]; then
+				EchoAndRun cp "lib/obnc/$module.env" "$destdir$prefix/$libdir/obnc"
+			fi
+			if "$includeLibCSrc"; then
+				local source="lib/obnc/$module.c"
+				if [ ! -e "$source" ]; then
+					source="lib/obnc/.obnc/$module.c"
+				fi
+				EchoAndRun sed -e "'s|#include \"\(\.obnc/\)\?\([^.]*\)\.h\"|#include <obnc/\2.h>|'" "'$source'" \> "'$destdir$prefix/$libdir/obnc/$module.c'"
+			fi
+		fi
+	done
+	rm -r "lib/obnc/.obnc"
+
+	#install documentation
+	EchoAndRun mkdir -p "$destdir$prefix/share/doc/obnc"
+	for file in $docFiles; do
+		EchoAndRun cp "share/doc/obnc/$file" "$destdir$prefix/share/doc/obnc"
+	done
+	(cd "lib/obnc" && OBNC_PREFIX="$selfDirPath" ../../bin/obncdoc)
+	EchoAndRun mkdir -p "$destdir$prefix/share/doc/obnc/obncdoc/obnc"
+	for file in "lib/obnc/obncdoc"/*; do
+		EchoAndRun cp "$file" "$destdir$prefix/share/doc/obnc/obncdoc/obnc"
+	done
+	EchoAndRun cd "$destdir$prefix/share/doc/obnc/obncdoc"
+	EchoAndRun "$selfDirPath/bin/obncdoc-index" \> index.html
+	EchoAndRun cp "$selfDirPath/share/obnc/style.css" .
+	cd - >/dev/null
+	rm -r lib/obnc/obncdoc
+
+	#install man pages
+	EchoAndRun mkdir -p "$destdir$prefix/share/man/man1"
+	for file in $man1Files; do
+		EchoAndRun cp "share/man/man1/$file" "$destdir$prefix/share/man/man1"
+	done
+
+	#install obncdoc style file
+	EchoAndRun mkdir -p "$destdir$prefix/share/obnc"
+	EchoAndRun cp "$selfDirPath/share/obnc/style.css" "$destdir$prefix/share/obnc"
+}
+
+
+Uninstall()
+{
+	#delete executables
+	EchoAndRun rm -f "$destdir$prefix/bin/obnc"
+	EchoAndRun rm -f "$destdir$prefix/bin/obnc-compile"
+	EchoAndRun rm -f "$destdir$prefix/bin/obnc-path"
+	EchoAndRun rm -f "$destdir$prefix/bin/obncdoc"
+	local file=
+	for file in $scripts; do
+		EchoAndRun rm -f "$destdir$prefix/bin/$file"
+	done
+
+	#delete library files
+	local module=
+	for module in $basicModules; do
+		EchoAndRun rm -f "$destdir$prefix/include/obnc/$module.h"
+		EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/$module.o"
+		EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/$module.sym"
+		EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/$module.imp"
+		EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/$module.env"
+		EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/$module.c"
+	done
+	EchoAndRun rm -f "$destdir$prefix/include/obnc/OBNC.h"
+	EchoAndRun rm -f "$destdir$prefix/include/obnc/OBNCConfig.h"
+	EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/OBNC.o"
+	EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/OBNC.env"
+	EchoAndRun rm -f "$destdir$prefix/$libdir/obnc/OBNC.c"
+
+	#delete documentation
+	for file in $docFiles; do
+		EchoAndRun rm -f "$destdir$prefix/share/doc/obnc/$file"
+	done
+	EchoAndRun rm -f "$destdir$prefix/share/doc/obnc/obncdoc/obnc/"*
+	EchoAndRun rm -f "$destdir$prefix/share/doc/obnc/obncdoc/index.html"
+	EchoAndRun rm -f "$destdir$prefix/share/doc/obnc/obncdoc/style.css"
+
+	#delete man pages
+	for file in $man1Files; do
+		EchoAndRun rm -f "$destdir$prefix/share/man/man1/$file"
+	done
+
+	#delete obncdoc style file
+	EchoAndRun rm -f "$destdir$prefix/share/obnc/style.css"
+}
+
+
+PrintHelp()
+{
+	echo "usage: "
+	printf "\tinstall [u] [--destdir=DESTDIR] [--include-lib-c-src]\n"
+	printf "\tinstall -h\n"
+	echo
+	printf "\tu\t\t\tuninstall\n"
+	printf "\t--destdir\t\tspecify directory for staged installation\n"
+	printf "\t--include-lib-c-src\tmake cross compilation possible\n"
+	printf "\t-h\t\t\tdisplay help and exit\n"
+}
+
+
+ExitInvalidCommand()
+{
+	echo "invalid command. Try 'install -h' for more information." >&2
+	exit 1
+}
+
+
+Run()
+{
+	local helpWanted=false
+	local uninstall=false
+	local arg=
+
+	for arg in "$@"; do
+		case "$arg" in
+			u)
+				uninstall=true;;
+			--destdir=*)
+				destdir="${arg#--destdir=}";;
+			--include-lib-c-src)
+				includeLibCSrc=true;;
+			-h)
+				helpWanted=true;;
+			*)
+				ExitInvalidCommand
+		esac
+	done
+
+	if "$helpWanted"; then
+		PrintHelp
+	else
+		if [ -e CONFIG ]; then
+			if [ "$prefix" != "${prefix#/}" ]; then
+				if "$uninstall"; then
+					Uninstall
+				else
+					Install
+				fi
+			else
+				printf "prefix must be an absolute path: %s\ninstallation aborted\n" "$prefix" >&2
+				exit 1
+			fi
+		else
+			printf "must first run build script\ninstallation aborted\n" >&2
+			exit 1
+		fi
+	fi
+}
+
+Run "$@"

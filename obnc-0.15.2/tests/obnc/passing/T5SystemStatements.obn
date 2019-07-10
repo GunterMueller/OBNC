@@ -1,0 +1,98 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE T5SystemStatements;
+
+	IMPORT SYSTEM;
+
+	PROCEDURE Test;
+		CONST byte = SYSTEM.VAL(BYTE, 100);
+		TYPE Array = ARRAY 2 OF INTEGER;
+			Pointer = POINTER TO RECORD END;
+		VAR b, b1: BOOLEAN;
+			ch, ch1: CHAR;
+			i, i1: INTEGER;
+			r, r1: REAL;
+			x, x1: BYTE;
+			xs: ARRAY 2 OF BYTE;
+			s, s1: SET;
+			a, a1: Array;
+			a2: ARRAY SYSTEM.SIZE(Array) + 1 OF INTEGER;
+	BEGIN
+		ASSERT(SYSTEM.SIZE(INTEGER) = SYSTEM.SIZE(Pointer));
+
+		(*ADR, PUT, GET*)
+		b := TRUE;
+		SYSTEM.GET(SYSTEM.ADR(b), b1);
+		ASSERT(b1 = b);
+		SYSTEM.PUT(SYSTEM.ADR(b), FALSE);
+		ASSERT(~b);
+		ch := "a";
+		SYSTEM.GET(SYSTEM.ADR(ch), ch1);
+		ASSERT(ch1 = ch);
+		SYSTEM.PUT(SYSTEM.ADR(ch), "b");
+		ASSERT(ch = "b");
+		SYSTEM.PUT(SYSTEM.ADR(ch), ch1);
+		ASSERT(ch = ch1);
+		i := 1;
+		SYSTEM.GET(SYSTEM.ADR(i), i1);
+		ASSERT(i1 = i);
+		SYSTEM.PUT(SYSTEM.ADR(i), 0);
+		ASSERT(i = 0);
+		r := 1.0;
+		SYSTEM.GET(SYSTEM.ADR(r), r1);
+		ASSERT(r1 = r);
+		SYSTEM.PUT(SYSTEM.ADR(r), 0.0);
+		ASSERT(r = 0.0);
+		x := 1;
+		SYSTEM.GET(SYSTEM.ADR(x), x1);
+		ASSERT(x1 = x);
+		SYSTEM.PUT(SYSTEM.ADR(x), 0);
+		ASSERT(x = 0);
+		s := {0};
+		SYSTEM.GET(SYSTEM.ADR(s), s1);
+		ASSERT(s1 = s);
+		SYSTEM.PUT(SYSTEM.ADR(s), {});
+		ASSERT(s = {});
+
+		(*BIT*)
+		i := 1;
+		ASSERT(SYSTEM.BIT(SYSTEM.ADR(i), 0));
+		i := 2;
+		ASSERT(~SYSTEM.BIT(SYSTEM.ADR(i), 0));
+		ASSERT(SYSTEM.BIT(SYSTEM.ADR(i), 1));
+
+		(*COPY*)
+		a[0] := 1; a[1] := 2;
+		SYSTEM.COPY(SYSTEM.ADR(a), SYSTEM.ADR(a1), 2);
+		ASSERT(a1[0] = 1);
+		ASSERT(a1[1] = 2);
+
+		(*VAL*)
+		xs[0] := 1; xs[1] := 2;
+		SYSTEM.PUT(SYSTEM.ADR(xs), SYSTEM.VAL(BYTE, 37));
+		ASSERT(xs[0] = 37);
+		ASSERT(xs[1] = 2);
+
+		(*silence "unused" compiler notifications*)
+		x := byte;
+		a2[0] := 0
+	END Test;
+
+BEGIN
+	Test
+END T5SystemStatements.
