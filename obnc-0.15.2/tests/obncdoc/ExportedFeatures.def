@@ -1,0 +1,30 @@
+DEFINITION ExportedFeatures; (*documentation...*)
+
+	IMPORT F := Files;
+
+	CONST
+		s = "s* = 'foo'; (**"; (*(*"foo"*)*)
+
+	TYPE
+		T = RECORD
+			f: RECORD (*documentation...*)
+				h: INTEGER
+			END;
+		END;
+
+		T1 = RECORD (T) END;
+
+	VAR
+		x: T; (*documentation...*)
+		u: F.File;
+
+	PROCEDURE P(x: INTEGER;
+		y: REAL;
+		z: BYTE);
+(*documentation,
+documentation...*)
+
+	PROCEDURE R((*in/out*) VAR x: INTEGER; (*out*) VAR y: REAL; VAR z: BYTE);
+(*documentation...*)
+
+END ExportedFeatures.

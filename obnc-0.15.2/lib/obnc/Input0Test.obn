@@ -1,0 +1,71 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE Input0Test;
+
+	IMPORT Input := Input0, Out;
+
+	PROCEDURE TestAvailable;
+		VAR n: INTEGER; ch: CHAR;
+	BEGIN
+		Out.String("Press abc...");
+		Out.Ln;
+		REPEAT
+			n := Input.Available()
+		UNTIL n >= 3;
+		Input.Read(ch);
+		ASSERT(ch = "a");
+		Input.Read(ch);
+		ASSERT(ch = "b");
+		Input.Read(ch);
+		ASSERT(ch = "c");
+		Out.String("OK");
+		Out.Ln;
+	END TestAvailable;
+
+
+	PROCEDURE TestRead;
+		VAR ch: CHAR;
+	BEGIN
+		Out.String("Press space ... ");
+		Out.Ln;
+		Input.Read(ch);
+		ASSERT(ch = " ");
+		Out.String("OK");
+		Out.Ln;
+
+		Out.String("Press $ ... ");
+		Out.Ln;
+		Input.Read(ch);
+		ASSERT(ch = "$");
+		Out.String("OK");
+		Out.Ln
+	END TestRead;
+
+
+	PROCEDURE TestTime;
+	BEGIN
+		ASSERT(Input.TimeUnit > 0);
+		ASSERT(Input.Time() > 0)
+	END TestTime;
+
+
+BEGIN
+	TestAvailable;
+	TestRead;
+	TestTime
+END Input0Test.
