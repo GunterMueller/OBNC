@@ -1,0 +1,35 @@
+.TH OBNC-PATH 1
+.SH NAME
+obnc-path \- print directory path for Oberon module
+.SH SYNOPSIS
+.B obnc-path
+[\fB\-v\fR]
+MODULE
+.br
+.B obnc-path
+(\fB\-h\fR | \fB\-v\fR)
+.SH DESCRIPTION
+.B obnc-path
+prints the directory path for an Oberon module. For a module M, the printed path is the first directory found which contains either the Oberon source file,
+.IR .obnc/M.sym
+or
+.IR M.sym .
+.P
+First the current directory is searched. Then paths in OBNC_IMPORT_PATH are searched. Finally the default library directory in the OBNC installation path is searched.
+.P
+For each path P, modules are searched both in P and in first-level subdirectories of P. Subdirectories represent individual libraries and are expected to be in lowercase. For the modules in a subdirectory L, only modules prefixed with L followed by an uppercase letter are searched. The other modules in L are considered local to the library.
+.SH OPTIONS
+.TP
+.BR \-h
+Display help and exit.
+.TP
+.BR \-v
+Without argument, display version and exit. Otherwise, print each inspected directory path to standard output.
+.SH ENVIRONMENT
+.IP OBNC_IMPORT_PATH
+List of directory paths to search Oberon modules in. Paths are separated with a colon on POSIX systems, and with a semicolon on MS Windows.
+.SH AUTHOR
+Written by Karl Landstr\[:o]m
+.SH "SEE ALSO"
+.BR obnc (1),
+.BR obnc-compile (1)

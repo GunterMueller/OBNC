@@ -1,0 +1,94 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE MathTest;
+
+	IMPORT Math;
+
+	CONST
+		eps = 0.01;
+
+BEGIN
+	ASSERT(ABS(Math.sqrt(1.0) - 1.0) < eps);
+	ASSERT(ABS(Math.sqrt(4.0) - 2.0) < eps);
+
+	ASSERT(ABS(Math.power(0.0, 1.0) - 0.0) < eps);
+	ASSERT(ABS(Math.power(1.0, 0.0) - 1.0) < eps);
+	ASSERT(ABS(Math.power(2.0, 3.0) - 8.0) < eps);
+	ASSERT(ABS(Math.power(2.0, -3.0) - 1.0 / 8.0) < eps);
+
+	ASSERT(ABS(Math.exp(0.0) - 1.0) < eps);
+	ASSERT(ABS(Math.exp(1.0) - Math.e) < eps);
+	ASSERT(ABS(Math.exp(2.0) - Math.e * Math.e) < eps);
+	ASSERT(ABS(Math.exp(-2.0) - 1.0 / Math.e / Math.e) < eps);
+
+	ASSERT(ABS(Math.ln(1.0) - 0.0) < eps);
+	ASSERT(ABS(Math.ln(Math.e) - 1.0) < eps);
+	ASSERT(ABS(Math.ln(Math.e * Math.e) - 2.0) < eps);
+
+	ASSERT(ABS(Math.log(1.0, 2.0) - 0.0) < eps);
+	ASSERT(ABS(Math.log(Math.e, Math.e) - 1.0) < eps);
+	ASSERT(ABS(Math.log(100.0, 10.0) - 2.0) < eps);
+
+	ASSERT(ABS(Math.round(0.4) - 0.0) < eps);
+	ASSERT(ABS(Math.round(-0.4) - 0.0) < eps);
+	ASSERT(ABS(Math.round(0.6) - 1.0) < eps);
+	ASSERT(ABS(Math.round(-0.6) - (-1.0)) < eps);
+
+	ASSERT(ABS(Math.sin(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.sin(Math.pi / 6.0) - 0.5) < eps);
+	ASSERT(ABS(Math.sin(Math.pi / 2.0) - 1.0) < eps);
+
+	ASSERT(ABS(Math.cos(0.0) - 1.0) < eps);
+	ASSERT(ABS(Math.cos(Math.pi / 3.0) - 0.5) < eps);
+	ASSERT(ABS(Math.cos(Math.pi / 2.0) - 0.0) < eps);
+
+	ASSERT(ABS(Math.tan(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.tan(Math.pi / 4.0) - 1.0) < eps);
+
+	ASSERT(ABS(Math.arcsin(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.arcsin(0.5) - Math.pi / 6.0) < eps);
+	ASSERT(ABS(Math.arcsin(1.0) - Math.pi / 2.0) < eps);
+
+	ASSERT(ABS(Math.arccos(1.0) - 0.0) < eps);
+	ASSERT(ABS(Math.arccos(0.5) - Math.pi / 3.0) < eps);
+	ASSERT(ABS(Math.arccos(0.0) - Math.pi / 2.0) < eps);
+
+	ASSERT(ABS(Math.arctan(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.arctan(1.0) - Math.pi / 4.0) < eps);
+
+	ASSERT(ABS(Math.arctan2(0.0, 2.0) - 0.0) < eps);
+	ASSERT(ABS(Math.arctan2(2.0, 2.0) - Math.pi / 4.0) < eps);
+
+	ASSERT(ABS(Math.sinh(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.sinh(1.0) - (Math.e - 1.0 / Math.e) / 2.0) < eps);
+
+	ASSERT(ABS(Math.cosh(0.0) - 1.0) < eps);
+	ASSERT(ABS(Math.cosh(1.0) - (Math.e + 1.0 / Math.e) / 2.0) < eps);
+
+	ASSERT(ABS(Math.tanh(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.tanh(1.0) - (Math.e - 1.0 / Math.e) / (Math.e + 1.0 / Math.e)) < eps);
+
+	ASSERT(ABS(Math.arcsinh(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.arcsinh((Math.e - 1.0 / Math.e) / 2.0) - 1.0) < eps);
+
+	ASSERT(ABS(Math.arccosh(1.0) - 0.0) < eps);
+	ASSERT(ABS(Math.arccosh((Math.e + 1.0 / Math.e) / 2.0) - 1.0) < eps);
+
+	ASSERT(ABS(Math.arctanh(0.0) - 0.0) < eps);
+	ASSERT(ABS(Math.arctanh((Math.e - 1.0 / Math.e) / (Math.e + 1.0 / Math.e)) - 1.0) < eps)
+END MathTest.

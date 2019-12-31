@@ -1,0 +1,61 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.*)
+
+MODULE In;
+(**Input from the standard input stream
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". All read operations except Char and Line skips over preceding whitespace.*)
+
+(*implemented in C*)
+
+	VAR Done*: BOOLEAN; (**status of last operation*)
+
+	PROCEDURE Open*;
+(**(re)sets the current position to the beginning of the input stream. Done indicates if the operation was successful.*)
+	END Open;
+
+
+	PROCEDURE Char*(VAR ch: CHAR);
+(**returns in ch the character at the current position*)
+	END Char;
+
+
+	PROCEDURE Int*(VAR i: INTEGER);
+(**returns in i the integer constant at the current position according to the format
+
+	integer = digit {digit} | digit {hexDigit} "H".
+	hexDigit = digit | "A" | "B" | "C" | "D" | "E" | "F".
+*)
+	END Int;
+
+
+	PROCEDURE Real*(VAR x: REAL);
+(**returns in x the real constant at the current position according to the format
+
+	real = digit {digit} "." {digit} [ScaleFactor].
+	ScaleFactor = "E" ["+" | "-"] digit {digit}.
+*)
+	END Real;
+
+
+	PROCEDURE String*(VAR str: ARRAY OF CHAR);
+(**returns in str the string at the current position according to the format
+
+	string = """ {character} """ | digit {hexdigit} "X" .
+*)
+	END String;
+
+
+	PROCEDURE Name*(VAR name: ARRAY OF CHAR);
+(**Name(s) returns in s the sequence of graphical (non-whitespace) characters at the current position*)
+	END Name;
+
+
+	PROCEDURE Line*(VAR line: ARRAY OF CHAR);
+(**Line(s) returns in s the sequence of characters from the current position to the end of the line. NOTE: This procedure is an extension to The Oakwood Guidelines.*)
+	END Line;
+
+END In.

@@ -1,0 +1,85 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.*)
+
+MODULE XYplane;
+(**Basic facilities for graphics programming
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". The drawing plane is repainted when Key is invoked. Fullscreen mode is toggled with Ctrl-f; it can also be exited with Esc.*)
+
+(*implemented in C*)
+
+	IMPORT Input; (*required by the implementation*)
+
+	CONST
+		(**drawing modes*)
+		draw* = 1;
+		erase* = 0;
+
+	VAR
+		X*, Y*: INTEGER; (**X = 0 and Y = 0. Included for compatibility with The Oakwood Guidelines.*)
+		W*, H*: INTEGER; (**width and height of the drawing plane in pixels*)
+
+	PROCEDURE Open*;
+(**initializes the drawing plane*)
+	END Open;
+
+	PROCEDURE Clear*;
+(**erases all pixels in the drawing plane*)
+	END Clear;
+
+	PROCEDURE Dot*(x, y, mode: INTEGER);
+(**Dot(x, y, m) draws or erases the pixel at the coordinates (x, y) relative to the lower left corner of the plane. If m = draw the pixel is drawn, if m = erase the pixel is erased.*)
+	END Dot;
+
+	PROCEDURE IsDot*(x, y: INTEGER): BOOLEAN;
+(**returns TRUE if the pixel at the coordinates (x, y) relative to the lower left corner of the screen is drawn, otherwise it returns FALSE*)
+	RETURN FALSE (*dummy value*)
+	END IsDot;
+
+	PROCEDURE Key*(): CHAR;
+(**reads the keyboard. If a key was pressed prior to invocation, its character value is returned, otherwise the result is 0X.*)
+	RETURN CHR(0) (*dummy value*)
+	END Key;
+
+	PROCEDURE SetSize*(width, height: INTEGER);
+(**sets the width and height of the drawing plane. The setting takes effect when Open is called. NOTE: This procedure is an extension to The Oakwood Guidelines.*)
+	END SetSize;
+
+	PROCEDURE UseColor*(color: INTEGER);
+(**sets the red, green and blue components of the drawing color as a three-byte value. NOTE: This procedure is an extension to The Oakwood Guidelines.*)
+	END UseColor;
+
+	PROCEDURE Color*(x, y: INTEGER): INTEGER;
+(**returns the color of the pixel at the coordinates (x, y). NOTE: This procedure is an extension to The Oakwood Guidelines.*)
+	RETURN 0 (*dummy value*)
+	END Color;
+
+(**Example:
+
+MODULE drawpixels;
+
+	(*click or drag the mouse to draw pixels*)
+
+	IMPORT Input, XYplane;
+
+	VAR
+		x, y: INTEGER;
+		keys: SET;
+
+BEGIN
+	XYplane.Open;
+	REPEAT
+		Input.Mouse(keys, x, y);
+		IF 2 IN keys THEN
+			XYplane.Dot(x, y, XYplane.draw)
+		END
+	UNTIL XYplane.Key() = "q"
+END drawpixels.
+*)
+
+BEGIN
+	ASSERT(Input.TimeUnit > 0) (*silence "Input unused" compiler note*)
+END XYplane.

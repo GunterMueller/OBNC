@@ -1,0 +1,41 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of obnc-libext.
+
+obnc-libext is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+obnc-libext is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with obnc-libext.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE ErrTest;
+
+	IMPORT Err := extErr;
+
+BEGIN
+	Err.Char("a"); Err.Ln;
+	Err.String("abc"); Err.Ln;
+	Err.Int(-07FFFFFFFH - 1, 0); Err.Ln; (*minimum 32-bit integer*)
+	Err.Int(-1, 0); Err.Ln;
+	Err.Int(-1, 3); Err.Ln;
+	Err.Int(0, 0); Err.Ln;
+	Err.Int(1, 0); Err.Ln;
+	Err.Int(37, 0); Err.Ln;
+	Err.Int(07FFFFFFFH, 0); Err.Ln; (*maximum 32-bit integer*)
+	Err.Hex(0); Err.Ln;
+	Err.Hex(1); Err.Ln;
+	Err.Hex(0DEADBEEFH); Err.Ln;
+	Err.Real(-1.0, 0); Err.Ln;
+	Err.Real(0.0, 0); Err.Ln;
+	Err.Real(0.0, 14); Err.Ln;
+	Err.Real(1.0, 0); Err.Ln;
+	Err.Real(37.0, 0); Err.Ln;
+	Err.Real(0.37, 0); Err.Ln
+END ErrTest.

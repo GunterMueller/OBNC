@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>DEFINITION Files</title>
+		<link rel='stylesheet' type='text/css' href='style.css' />
+	</head>
+	<body>
+		<p><a href='index.html'>Index</a></p>
+
+		<pre>
+DEFINITION <em>Files</em>;
+<span class='comment'>(*Operations on files
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers".*)</span>
+
+	TYPE
+		File = POINTER TO Handle;
+
+		Rider = RECORD
+			eof: BOOLEAN;
+			res: INTEGER;
+		END;
+
+	PROCEDURE <em>Old</em>(name: ARRAY OF CHAR): File;
+<span class='comment'>(*Old(fn) searches the name fn in the directory and returns the corresponding file. If the name is not found, it returns NIL.*)</span>
+
+	PROCEDURE <em>New</em>(name: ARRAY OF CHAR): File;
+<span class='comment'>(*New(fn) creates and returns a new file. The name fn is remembered for the later use of the operation Register. The file is only entered into the directory when Register is called.*)</span>
+
+	PROCEDURE <em>Register</em>(f: File);
+<span class='comment'>(*enters the file f into the directory together with the name provided in the operation New that created f. The file buffers are written back. Any existing mapping of this name to another file is overwritten.*)</span>
+
+	PROCEDURE <em>Close</em>(f: File);
+<span class='comment'>(*writes back the file buffers of f. The file is still accessible by its handle f and the riders positioned on it. If a file is not modified it is not necessary to close it.*)</span>
+
+	PROCEDURE <em>Purge</em>(f: File);
+<span class='comment'>(*resets the length of file f to 0*)</span>
+
+	PROCEDURE <em>Delete</em>(name: ARRAY OF CHAR; VAR res: INTEGER);
+<span class='comment'>(*Delete(fn, res) removes the directory entry for the file fn without deleting the file. If res = 0 the file has been successfully deleted. If there are variables referring to the file while Delete is called, they can still be used.*)</span>
+
+	PROCEDURE <em>Rename</em>(old, new: ARRAY OF CHAR; VAR res: INTEGER);
+<span class='comment'>(*Rename(oldfn, newfn, res) renames the directory entry oldfn to newfn. If res = 0 the file has been successfully renamed. If there are variables referring to the file while Rename is called, they can still be used.*)</span>
+
+	PROCEDURE <em>Length</em>(f: File): INTEGER;
+<span class='comment'>(*returns the number of bytes in file f*)</span>
+
+	PROCEDURE <em>GetDate</em>(f: File; VAR t, d: INTEGER);
+<span class='comment'>(*returns the time t and date d of the last modification of file f. The encoding is: hour = t DIV 4096; minute = t DIV 64 MOD 64; second = t MOD 64; year = d DIV 512; month = d DIV 32 MOD 16; day = d MOD 32.*)</span>
+
+	PROCEDURE <em>Set</em>(VAR r: Rider; f: File; pos: INTEGER);
+<span class='comment'>(*sets the rider r to position pos in file f. The field r.eof is set to FALSE. The
+operation requires that 0 &lt;= pos &lt;= Length(f)*)</span>
+
+	PROCEDURE <em>Pos</em>(VAR r: Rider): INTEGER;
+<span class='comment'>(*returns the position of the rider r*)</span>
+
+	PROCEDURE <em>Base</em>(VAR r: Rider): File;
+<span class='comment'>(*returns the file to which the rider r has been set*)</span>
+
+	PROCEDURE <em>Read</em>(VAR r: Rider; VAR x: BYTE);
+<span class='comment'>(*reads the next byte x from rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>ReadInt</em>(VAR r: Rider; VAR i: INTEGER);
+<span class='comment'>(*reads an integer i from rider r and advances r accordingly.*)</span>
+
+	PROCEDURE <em>ReadReal</em>(VAR r: Rider; VAR x: REAL);
+<span class='comment'>(*reads a real number x from rider r and advances r accordingly.*)</span>
+
+	PROCEDURE <em>ReadNum</em>(VAR r: Rider; VAR i: INTEGER);
+<span class='comment'>(*reads an integer i from rider r and advances r accordingly. The number i is compactly encoded*)</span>
+
+	PROCEDURE <em>ReadString</em>(VAR r: Rider; VAR s: ARRAY OF CHAR);
+<span class='comment'>(*reads a sequence of characters (including the terminating 0X) from rider r and returns it in s. The rider is advanced accordingly. The actual parameter corresponding to s must be long enough to hold the character sequence plus the terminating 0X.*)</span>
+
+	PROCEDURE <em>ReadSet</em>(VAR r: Rider; VAR s: SET);
+<span class='comment'>(*reads a set s from rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>ReadBool</em>(VAR r: Rider; VAR b: BOOLEAN);
+<span class='comment'>(*reads a Boolean value b from rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>ReadBytes</em>(VAR r: Rider; VAR buf: ARRAY OF BYTE; n: INTEGER);
+<span class='comment'>(*reads n bytes into buffer buf starting at the rider position r. The rider is advanced accordingly. If less than n bytes could be read, r.res contains the number of requested but unread bytes.*)</span>
+
+	PROCEDURE <em>Write</em>(VAR r: Rider; x: BYTE);
+<span class='comment'>(*writes the byte x to rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>WriteInt</em>(VAR r: Rider; i: INTEGER);
+<span class='comment'>(*writes the integer i to rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>WriteReal</em>(VAR r: Rider; x: REAL);
+<span class='comment'>(*writes the real number x to rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>WriteNum</em>(VAR r: Rider; i: INTEGER);
+<span class='comment'>(*writes the integer i to rider r and advances r accordingly. The number i is compactly encoded.*)</span>
+
+	PROCEDURE <em>WriteString</em>(VAR r: Rider; s: ARRAY OF CHAR);
+<span class='comment'>(*writes the sequence of characters s (including the terminating 0X) to rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>WriteSet</em>(VAR r: Rider; s: SET);
+<span class='comment'>(*writes the set s to rider r and advances r accordingly*)</span>
+
+	PROCEDURE <em>WriteBool</em>(VAR r: Rider; b: BOOLEAN);
+<span class='comment'>(*writes the Boolean value b to rider r and advances r accordingly.*)</span>
+
+	PROCEDURE <em>WriteBytes</em>(VAR r: Rider; VAR buf: ARRAY OF BYTE; n: INTEGER);
+<span class='comment'>(*writes the first n bytes from buf to rider r and advances r accordingly. r.res contains the number of bytes that could not be written (e.g., due to a disk full error).*)</span>
+
+END Files.
+</pre>
+	</body>
+</html>

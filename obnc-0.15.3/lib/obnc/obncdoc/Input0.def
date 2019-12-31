@@ -1,0 +1,17 @@
+DEFINITION Input0;
+(*Access to keyboard and clock
+
+Implements a subset of basic module Input applicable to console applications. Import with Input := Input0 for improved portability.*)
+
+	VAR TimeUnit: INTEGER; (*clock ticks per second*)
+
+	PROCEDURE Available(): INTEGER;
+(*returns the number of characters in the keyboard buffer*)
+
+	PROCEDURE Read(VAR ch: CHAR);
+(*returns (and removes) the next character from the keyboard buffer. If the buffer is empty, Read waits until a key is pressed.*)
+
+	PROCEDURE Time(): INTEGER;
+(*returns the time elapsed since system startup in units of size 1 / TimeUnit seconds*)
+
+END Input0.

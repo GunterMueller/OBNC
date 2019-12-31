@@ -1,0 +1,62 @@
+DEFINITION XYplane;
+(*Basic facilities for graphics programming
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". The drawing plane is repainted when Key is invoked. Fullscreen mode is toggled with Ctrl-f; it can also be exited with Esc.*)
+
+	CONST
+		(*drawing modes*)
+		draw = 1;
+		erase = 0;
+
+	VAR
+		X, Y: INTEGER; (*X = 0 and Y = 0. Included for compatibility with The Oakwood Guidelines.*)
+		W, H: INTEGER; (*width and height of the drawing plane in pixels*)
+
+	PROCEDURE Open;
+(*initializes the drawing plane*)
+
+	PROCEDURE Clear;
+(*erases all pixels in the drawing plane*)
+
+	PROCEDURE Dot(x, y, mode: INTEGER);
+(*Dot(x, y, m) draws or erases the pixel at the coordinates (x, y) relative to the lower left corner of the plane. If m = draw the pixel is drawn, if m = erase the pixel is erased.*)
+
+	PROCEDURE IsDot(x, y: INTEGER): BOOLEAN;
+(*returns TRUE if the pixel at the coordinates (x, y) relative to the lower left corner of the screen is drawn, otherwise it returns FALSE*)
+
+	PROCEDURE Key(): CHAR;
+(*reads the keyboard. If a key was pressed prior to invocation, its character value is returned, otherwise the result is 0X.*)
+
+	PROCEDURE SetSize(width, height: INTEGER);
+(*sets the width and height of the drawing plane. The setting takes effect when Open is called. NOTE: This procedure is an extension to The Oakwood Guidelines.*)
+
+	PROCEDURE UseColor(color: INTEGER);
+(*sets the red, green and blue components of the drawing color as a three-byte value. NOTE: This procedure is an extension to The Oakwood Guidelines.*)
+
+	PROCEDURE Color(x, y: INTEGER): INTEGER;
+(*returns the color of the pixel at the coordinates (x, y). NOTE: This procedure is an extension to The Oakwood Guidelines.*)
+
+(*Example:
+
+MODULE drawpixels;
+
+	(*click or drag the mouse to draw pixels*)
+
+	IMPORT Input, XYplane;
+
+	VAR
+		x, y: INTEGER;
+		keys: SET;
+
+BEGIN
+	XYplane.Open;
+	REPEAT
+		Input.Mouse(keys, x, y);
+		IF 2 IN keys THEN
+			XYplane.Dot(x, y, XYplane.draw)
+		END
+	UNTIL XYplane.Key() = "q"
+END drawpixels.
+*)
+
+END XYplane.

@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>DEFINITION XYplane</title>
+		<link rel='stylesheet' type='text/css' href='style.css' />
+	</head>
+	<body>
+		<p><a href='index.html'>Index</a></p>
+
+		<pre>
+DEFINITION <em>XYplane</em>;
+<span class='comment'>(*Basic facilities for graphics programming
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers". The drawing plane is repainted when Key is invoked. Fullscreen mode is toggled with Ctrl-f; it can also be exited with Esc.*)</span>
+
+	CONST
+		<span class='comment'>(*drawing modes*)</span>
+		draw = 1;
+		erase = 0;
+
+	VAR
+		X, Y: INTEGER; <span class='comment'>(*X = 0 and Y = 0. Included for compatibility with The Oakwood Guidelines.*)</span>
+		W, H: INTEGER; <span class='comment'>(*width and height of the drawing plane in pixels*)</span>
+
+	PROCEDURE <em>Open</em>;
+<span class='comment'>(*initializes the drawing plane*)</span>
+
+	PROCEDURE <em>Clear</em>;
+<span class='comment'>(*erases all pixels in the drawing plane*)</span>
+
+	PROCEDURE <em>Dot</em>(x, y, mode: INTEGER);
+<span class='comment'>(*Dot(x, y, m) draws or erases the pixel at the coordinates (x, y) relative to the lower left corner of the plane. If m = draw the pixel is drawn, if m = erase the pixel is erased.*)</span>
+
+	PROCEDURE <em>IsDot</em>(x, y: INTEGER): BOOLEAN;
+<span class='comment'>(*returns TRUE if the pixel at the coordinates (x, y) relative to the lower left corner of the screen is drawn, otherwise it returns FALSE*)</span>
+
+	PROCEDURE <em>Key</em>(): CHAR;
+<span class='comment'>(*reads the keyboard. If a key was pressed prior to invocation, its character value is returned, otherwise the result is 0X.*)</span>
+
+	PROCEDURE <em>SetSize</em>(width, height: INTEGER);
+<span class='comment'>(*sets the width and height of the drawing plane. The setting takes effect when Open is called. NOTE: This procedure is an extension to The Oakwood Guidelines.*)</span>
+
+	PROCEDURE <em>UseColor</em>(color: INTEGER);
+<span class='comment'>(*sets the red, green and blue components of the drawing color as a three-byte value. NOTE: This procedure is an extension to The Oakwood Guidelines.*)</span>
+
+	PROCEDURE <em>Color</em>(x, y: INTEGER): INTEGER;
+<span class='comment'>(*returns the color of the pixel at the coordinates (x, y). NOTE: This procedure is an extension to The Oakwood Guidelines.*)</span>
+
+<span class='comment'>(*Example:
+
+MODULE drawpixels;
+
+	(*click or drag the mouse to draw pixels*)
+
+	IMPORT Input, XYplane;
+
+	VAR
+		x, y: INTEGER;
+		keys: SET;
+
+BEGIN
+	XYplane.Open;
+	REPEAT
+		Input.Mouse(keys, x, y);
+		IF 2 IN keys THEN
+			XYplane.Dot(x, y, XYplane.draw)
+		END
+	UNTIL XYplane.Key() = "q"
+END drawpixels.
+*)</span>
+
+END XYplane.
+</pre>
+	</body>
+</html>

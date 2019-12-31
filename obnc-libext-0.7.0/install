@@ -1,0 +1,165 @@
+#!/bin/sh
+
+# Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+#
+# This file is part of obnc-libext.
+#
+# obnc-libext is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# obnc-libext is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with obnc-libext.  If not, see <http://www.gnu.org/licenses/>.
+
+set -o errexit -o nounset
+
+readonly selfDirPath="$(cd "$(dirname "$0")"; pwd -P)"
+readonly packageName="$(basename "$selfDirPath")"
+readonly packageNameSansVersion="${packageName%%-[0-9]*}"
+readonly libName="${packageNameSansVersion#obnc-lib}"
+
+readonly modules="$(ls "$selfDirPath/$libName"/*.obn | grep -v 'Test\.obn$' | while read file; do basename "${file%.obn}"; done)"
+
+prefix="/usr/local"
+libdir="lib"
+destdir=
+
+destIncludeDir=
+destLibDir=
+destObncdocDir=
+
+includeLibCSrc=false
+
+EchoAndRun()
+{
+	echo "$@"
+	eval "$@"
+}
+
+
+UpdateObncdocIndex()
+{
+	EchoAndRun cd "$destObncdocDir/.."
+	if obncdoc-index >/dev/null 2>&1; then
+		EchoAndRun obncdoc-index \> index.html
+	fi
+	cd - >/dev/null
+}
+
+
+Install()
+{
+	local srcDir="$selfDirPath/$libName"
+
+	#install library
+	EchoAndRun mkdir -p "$destIncludeDir"
+	EchoAndRun mkdir -p "$destLibDir"
+	local module=
+	for module in $modules; do
+		EchoAndRun cp "$srcDir/.obnc/$module.h" "$destIncludeDir"
+		EchoAndRun cp "$srcDir/.obnc/$module.o" "$destLibDir"
+		EchoAndRun cp "$srcDir/.obnc/$module.sym" "$destLibDir"
+		if [ -e "$srcDir/.obnc/$module.imp" ]; then
+			EchoAndRun cp "$srcDir/.obnc/$module.imp" "$destLibDir"
+		fi
+		if [ -e "$srcDir/$module.env" ]; then
+			EchoAndRun cp "$srcDir/$module.env" "$destLibDir"
+		fi
+		if "$includeLibCSrc"; then
+			local source="$srcDir/$module.c"
+			if [ ! -e "$source" ]; then
+				source="$srcDir/.obnc/$module.c"
+			fi
+			EchoAndRun sed -e "'s|#include \"\(\.obnc/\)\?$module\.h\"|#include <obnc/ext/$module.h>|'" "'$source'" \> "'$destLibDir/$module.c'"
+		fi
+	done
+
+	#install documentation
+	EchoAndRun mkdir -p "$destObncdocDir"
+	EchoAndRun cp "$srcDir/obncdoc/$libName"* "$destObncdocDir"
+	for file in "$srcDir/obncdoc/"*; do
+		if [ "$file" = "${file%Test.*}" ]; then
+			EchoAndRun cp "$file" "$destObncdocDir"
+		fi
+	done
+	UpdateObncdocIndex
+}
+
+
+Uninstall()
+{
+	#delete library files
+	local module=
+	for module in $modules; do
+		EchoAndRun rm -f "$destIncludeDir/$module.h"
+		EchoAndRun rm -f "$destLibDir/$module.o"
+		EchoAndRun rm -f "$destLibDir/$module.sym"
+		EchoAndRun rm -f "$destLibDir/$module.imp"
+		EchoAndRun rm -f "$destLibDir/$module.env"
+		EchoAndRun rm -f "$destLibDir/$module.c"
+	done
+
+	#delete documentation
+	EchoAndRun rm -f "$destObncdocDir"/*
+	UpdateObncdocIndex
+}
+
+
+Help()
+{
+	echo "usage: "
+	printf "\tinstall [u] [--prefix=PREFIX] [--libdir=LIBDIR] [--destdir=DESTDIR] [--include-lib-c-src]\n"
+	printf "\tinstall -h\n"
+	echo
+	printf "\tu\t\t\tuninstall\n"
+	printf "\t--prefix\t\ttoplevel installation dir instead of /usr/local\n"
+	printf "\t--libdir\t\tlibrary installation directory instead of lib\n"
+	printf "\t--destdir\t\tspecify directory for staged installation\n"
+	printf "\t--include-lib-c-src\tmake cross compilation possible\n"
+	printf "\t-h\t\t\tdisplay help and exit\n"
+}
+
+uninstall=false
+for arg in "$@"; do
+	case "$arg" in
+		u)
+			uninstall=true;;
+		--prefix=*)
+			prefix="${arg#--prefix=}"
+			if [ "${prefix#/}" = "$prefix" ]; then
+				echo "prefix must be an absolute path: $prefix" >&2
+				exit 1
+			fi;;
+		--libdir=*)
+			libdir="${arg#--libdir=}"
+			if [ "${libdir#*/}" != "$libdir" ]; then
+				echo "libdir must be a prefix relative path, not an absolute path: $prefix" >&2
+				exit 1
+			fi;;
+		--destdir=*)
+			destdir="${arg#--destdir=}";;
+		--include-lib-c-src)
+			includeLibCSrc=true;;
+		-h)
+			Help
+			exit;;
+		*) { echo "invalid command"; Help; } >&2
+			exit 1
+	esac
+done
+
+destIncludeDir="$destdir$prefix/include/obnc/$libName"
+destLibDir="$destdir$prefix/$libdir/obnc/$libName"
+destObncdocDir="$destdir$prefix/share/doc/obnc/obncdoc/$libName"
+
+if "$uninstall"; then
+	Uninstall
+else
+	Install
+fi

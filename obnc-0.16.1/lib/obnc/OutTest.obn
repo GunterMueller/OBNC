@@ -1,0 +1,41 @@
+(*Copyright (C) 2017, 2018, 2019 Karl Landstrom <karl@miasap.se>
+
+This file is part of OBNC.
+
+OBNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+OBNC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OBNC.  If not, see <http://www.gnu.org/licenses/>.*)
+
+MODULE OutTest;
+
+	IMPORT Out;
+
+BEGIN
+	Out.Char("a"); Out.Ln;
+	Out.String("abc"); Out.Ln;
+	Out.Int(-07FFFH - 1, 0); Out.Ln; (*minimum 16-bit integer*)
+	Out.Int(-1, 0); Out.Ln;
+	Out.Int(-1, 3); Out.Ln;
+	Out.Int(0, 0); Out.Ln;
+	Out.Int(1, 0); Out.Ln;
+	Out.Int(37, 0); Out.Ln;
+	Out.Int(07FFFH, 0); Out.Ln; (*maximum 16-bit integer*)
+	Out.Hex(0); Out.Ln;
+	Out.Hex(1); Out.Ln;
+	Out.Hex(0BEEFH); Out.Ln;
+	Out.Real(-1.0, 0); Out.Ln;
+	Out.Real(0.0, 0); Out.Ln;
+	Out.Real(0.0, 14); Out.Ln;
+	Out.Real(1.0, 0); Out.Ln;
+	Out.Real(37.0, 0); Out.Ln;
+	Out.Real(0.37, 0); Out.Ln
+END OutTest.

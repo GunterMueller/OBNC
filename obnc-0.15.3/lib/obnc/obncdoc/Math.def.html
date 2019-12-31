@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>DEFINITION Math</title>
+		<link rel='stylesheet' type='text/css' href='style.css' />
+	</head>
+	<body>
+		<p><a href='index.html'>Index</a></p>
+
+		<pre>
+DEFINITION <em>Math</em>;
+<span class='comment'>(*General purpose mathematical functions
+
+Implements the basic library module from "The Oakwood Guidelines for Oberon-2 Compiler Developers".*)</span>
+
+	CONST
+		pi = 3.14159265358979;
+		e = 2.71828182845905;
+
+	PROCEDURE <em>sqrt</em>(x: REAL): REAL;
+<span class='comment'>(*returns the square root of x, where x must be positive*)</span>
+
+	PROCEDURE <em>power</em>(base, exp: REAL): REAL;
+<span class='comment'>(*returns base raised to exp*)</span>
+
+	PROCEDURE <em>exp</em>(x: REAL): REAL;
+<span class='comment'>(*returns the constant e raised to x*)</span>
+
+	PROCEDURE <em>ln</em>(x: REAL): REAL;
+<span class='comment'>(*returns the natural logarithm of x with base e*)</span>
+
+	PROCEDURE <em>log</em>(x, base: REAL): REAL;
+<span class='comment'>(*log(x, b) returns the logarithm of x with base b*)</span>
+
+	PROCEDURE <em>round</em>(x: REAL): REAL;
+<span class='comment'>(*returns x rounded to the nearest integer. If the fraction part of x is in range 0.0 to 0.5 then the result is the largest integer not greater than x, otherwise the result is x rounded up to the next highest whole number. Note that integer values cannot always be exactly represented in REAL format.*)</span>
+
+	PROCEDURE <em>sin</em>(x: REAL): REAL;
+<span class='comment'>(*returns the sine of a radian value x*)</span>
+
+	PROCEDURE <em>cos</em>(x: REAL): REAL;
+<span class='comment'>(*returns the cosine of a radian value x*)</span>
+
+	PROCEDURE <em>tan</em>(x: REAL): REAL;
+<span class='comment'>(*returns the tangent of a radian value x*)</span>
+
+	PROCEDURE <em>arcsin</em>(x: REAL): REAL;
+<span class='comment'>(*returns the inverse sine of x in radians, where -1 &lt;= x &lt;= 1*)</span>
+
+	PROCEDURE <em>arccos</em>(x: REAL): REAL;
+<span class='comment'>(*returns the inverse cosine of x in radians, where -1 &lt;= x &lt;= 1*)</span>
+
+	PROCEDURE <em>arctan</em>(x: REAL): REAL;
+<span class='comment'>(*returns the inverse tangent of x in radians, where -1 &lt;= x &lt;= 1*)</span>
+
+	PROCEDURE <em>arctan2</em>(y, x: REAL): REAL;
+<span class='comment'>(*returns the inverse tangent in radians of y/x based on the signs of both values to determine the correct quadrant.*)</span>
+
+	PROCEDURE <em>sinh</em>(x: REAL): REAL;
+<span class='comment'>(*returns the hyperbolic sine of x*)</span>
+
+	PROCEDURE <em>cosh</em>(x: REAL): REAL;
+<span class='comment'>(*returns the hyperbolic cosine of x*)</span>
+
+	PROCEDURE <em>tanh</em>(x: REAL): REAL;
+<span class='comment'>(*returns the hyperbolic tangent of x*)</span>
+
+	PROCEDURE <em>arcsinh</em>(x: REAL): REAL;
+<span class='comment'>(*returns the inverse hyperbolic sine of x*)</span>
+
+	PROCEDURE <em>arccosh</em>(x: REAL): REAL;
+<span class='comment'>(*returns the inverse hyperbolic cosine of x*)</span>
+
+	PROCEDURE <em>arctanh</em>(x: REAL): REAL;
+<span class='comment'>(*returns the inverse hyperbolic tangent of x*)</span>
+
+END Math.
+</pre>
+	</body>
+</html>

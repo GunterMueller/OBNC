@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+	<head>
+		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+		<title>DEFINITION Input0</title>
+		<link rel='stylesheet' type='text/css' href='style.css' />
+	</head>
+	<body>
+		<p><a href='index.html'>Index</a></p>
+
+		<pre>
+DEFINITION <em>Input0</em>;
+<span class='comment'>(*Access to keyboard and clock
+
+Implements a subset of basic module Input applicable to console applications. Import with Input := Input0 to emphasize the compatibility.*)</span>
+
+	VAR TimeUnit: INTEGER; <span class='comment'>(*clock ticks per second*)</span>
+
+	PROCEDURE <em>Available</em>(): INTEGER;
+<span class='comment'>(*returns the number of characters in the keyboard buffer*)</span>
+
+	PROCEDURE <em>Read</em>(VAR ch: CHAR);
+<span class='comment'>(*returns (and removes) the next character from the keyboard buffer. If the buffer is empty, Read waits until a key is pressed.*)</span>
+
+	PROCEDURE <em>Time</em>(): INTEGER;
+<span class='comment'>(*returns the time elapsed since system startup in units of size 1 / TimeUnit seconds*)</span>
+
+END Input0.
+</pre>
+	</body>
+</html>
